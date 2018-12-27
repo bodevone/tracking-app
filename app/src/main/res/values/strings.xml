@@ -1,0 +1,37 @@
+<resources>
+    <string name="app_name">Grand Alem Tracking</string>
+
+    <string name="login">Войти</string>
+    <string name="next">далее</string>
+    <string name="enter_as_driver">Войти как водитель</string>
+
+    <string name="your_name">Ваше Имя</string>
+    <string name="your_feedback">Ваш Отзыв</string>
+    <string name="your_phone">Ваш Телефон</string>
+    <string name="send">Отправить</string>
+
+    <string name="driver">Водитель</string>
+    <string name="passenger">Пассажир</string>
+    <string name="who_are_you">Кто вы?</string>
+    <string name="your_data">Ваши данные</string>
+
+    <string name="username">Имя пользователя</string>
+    <string name="password">Пароль</string>
+    <string name="signup">Еще нет аккаунта? Зарегестрируйтесь</string>
+
+    <string name="feedback">Отзыв</string>
+    <string name="map">Карта</string>
+    <string name="info">Информация</string>
+    <string name="logout">Выйти</string>
+    <string name="more">Еще</string>
+
+    <string name="text_on_top">ТЕРМИНАЛ</string>
+
+    <string name="navigation_drawer_open">Открыть навигационный ящик</string>
+    <string name="navigation_drawer_close">Закрыть навигационный ящик</string>
+
+
+    <string name="location_permissions_required">Location permissions are required for tracking
+        location. Please grant these permissions to continue.</string>
+    <string name="title_activity_maps_fragment">Map</string>
+</resources>

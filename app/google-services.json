@@ -1,0 +1,73 @@
+{
+  "project_info": {
+    "project_number": "518213220283",
+    "firebase_url": "https://gps-tracker-220118.firebaseio.com",
+    "project_id": "gps-tracker-220118",
+    "storage_bucket": "gps-tracker-220118.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518213220283:android:4335bed8c8ff2b62",
+        "android_client_info": {
+          "package_name": "com.example.bodevan.trackappfirebase2712"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "518213220283-b49nqs3h2dt5fjke1q8flk00c9vve6ki.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAV7UudjkqC5qn85Om2b-cWv3-VLHyg4co"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:518213220283:android:24934979227fd96c",
+        "android_client_info": {
+          "package_name": "com.example.bodevan.trackgps"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "518213220283-b49nqs3h2dt5fjke1q8flk00c9vve6ki.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAV7UudjkqC5qn85Om2b-cWv3-VLHyg4co"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
