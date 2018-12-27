@@ -9,6 +9,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -56,9 +57,11 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        Toast.makeText(getActivity(), "In Driver Fragment", Toast.LENGTH_LONG).show();
+
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        LatLng tokyo = new LatLng(35.652832, 139.839478);
+        mMap.addMarker(new MarkerOptions().position(tokyo).title("Marker in Tokyo"));
+        mMap.moveCamera(CameraUpdateFactory.newLatLng(tokyo));
     }
 }

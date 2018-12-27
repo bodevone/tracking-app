@@ -15,6 +15,7 @@ import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -22,14 +23,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private DrawerLayout drawer;
     ImageView header;
     NavigationView navigationView;
-    public Boolean state;
+    public String stateRole;
+    public final String driver = "driver";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        state = getIntent().getExtras().getBoolean("state");
+        stateRole = getIntent().getExtras().getString("role");
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.parseColor("#FDBE38"));
@@ -45,29 +47,14 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        if (state){
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    new MapsDriverFragment()).commit();
-        }
-        else{
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    new MapsUserFragment()).commit();
-        }
-        navigationView.setCheckedItem(R.id.nav_map);
+        enterMap();
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_map:
-                if (state){
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsDriverFragment()).commit();
-                }
-                else{
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsUserFragment()).commit();
-                }
+                enterMap();
                 break;
             case R.id.nav_feedback:
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
@@ -88,15 +75,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         header.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (state){
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsDriverFragment()).commit();
-                }
-                else{
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsUserFragment()).commit();
-                }
-                navigationView.setCheckedItem(R.id.nav_map);
+                enterMap();
                 drawer.closeDrawer(GravityCompat.START);
             }
         });
@@ -113,30 +92,26 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             FragmentManager manager = getSupportFragmentManager();
             if (manager.findFragmentById(R.id.fragment_container) instanceof FeedbackFragment) {
-                if (state){
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsDriverFragment()).commit();
-                }
-                else{
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsUserFragment()).commit();
-                }
-                navigationView.setCheckedItem(R.id.nav_map);
+                enterMap();
             } else if (manager.findFragmentById(R.id.fragment_container) instanceof InfoFragment) {
-                if (state){
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsDriverFragment()).commit();
-                }
-                else{
-                    getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                            new MapsUserFragment()).commit();
-                }
-                navigationView.setCheckedItem(R.id.nav_map);
+                enterMap();
             }
             else{
                 super.onBackPressed();
             }
 
         }
+    }
+
+    public void enterMap(){
+        if (stateRole.equals(driver)){
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                    new MapsDriverFragment()).commit();
+        }
+        else {
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                    new MapsUserFragment()).commit();
+        }
+        navigationView.setCheckedItem(R.id.nav_map);
     }
 }
