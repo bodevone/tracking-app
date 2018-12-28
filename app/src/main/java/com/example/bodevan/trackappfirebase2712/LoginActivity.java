@@ -9,6 +9,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.google.firebase.database.DataSnapshot;
@@ -27,6 +28,8 @@ public class LoginActivity extends AppCompatActivity {
     private EditText username;
     private EditText password;
     private String stateRole;
+    private String usernameString;
+    private ProgressBar mProgressBar;
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mAccountDatabeReference;
@@ -71,9 +74,10 @@ public class LoginActivity extends AppCompatActivity {
                         Account account = user.getValue(Account.class);
 
                         if (account.password.equals(password.getText().toString().trim())) {
+                            usernameString = account.username;
                             stateRole = account.role;
                             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                            intent.putExtra("role", stateRole);
+                            intent.putExtra("role", stateRole).putExtra("username", usernameString);
                             startActivity(intent);
                             finish();
                         } else {

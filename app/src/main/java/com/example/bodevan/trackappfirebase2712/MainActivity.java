@@ -23,7 +23,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private DrawerLayout drawer;
     ImageView header;
     NavigationView navigationView;
-    public String stateRole;
+    private String stateRole;
+    private String username;
     public final String driver = "driver";
 
     @Override
@@ -32,6 +33,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_main);
 
         stateRole = getIntent().getExtras().getString("role");
+        username = getIntent().getExtras().getString("username");
+
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.parseColor("#FDBE38"));
@@ -104,13 +107,19 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     }
 
     public void enterMap(){
+        Bundle bundle = new Bundle();
+        bundle.putString("username",username);
+        MapsDriverFragment fragDriver = new MapsDriverFragment();;
+        MapsUserFragment fragUser = new MapsUserFragment();
+        fragDriver.setArguments(bundle);
+        fragUser.setArguments(bundle);
         if (stateRole.equals(driver)){
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    new MapsDriverFragment()).commit();
+                    fragDriver).commit();
         }
         else {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    new MapsUserFragment()).commit();
+                    fragUser).commit();
         }
         navigationView.setCheckedItem(R.id.nav_map);
     }

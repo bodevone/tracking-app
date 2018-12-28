@@ -60,7 +60,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
-        Toast.makeText(getActivity(), "In User Fragment", Toast.LENGTH_LONG).show();
 
         // Add a marker in Sydney and move the camera
         LatLng sydney = new LatLng(-34, 151);
