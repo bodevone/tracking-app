@@ -25,7 +25,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     NavigationView navigationView;
     private String stateRole;
     private String username;
+    private String driverForUser;
     public final String driver = "driver";
+    public final String user = "user";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,6 +36,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         stateRole = getIntent().getExtras().getString("role");
         username = getIntent().getExtras().getString("username");
+
+        if (stateRole.equals(user)) {
+            driverForUser = getIntent().getExtras().getString("driver");
+        }
 
 
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -109,6 +115,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void enterMap(){
         Bundle bundle = new Bundle();
         bundle.putString("username",username);
+        bundle.putString("driver", driverForUser);
         MapsDriverFragment fragDriver = new MapsDriverFragment();;
         MapsUserFragment fragUser = new MapsUserFragment();
         fragDriver.setArguments(bundle);

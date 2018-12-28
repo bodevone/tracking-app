@@ -29,6 +29,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText password;
     private String stateRole;
     private String usernameString;
+    private String driverForUser;
     private ProgressBar mProgressBar;
 
     private FirebaseDatabase mFirebaseDatabase;
@@ -76,8 +77,13 @@ public class LoginActivity extends AppCompatActivity {
                         if (account.password.equals(password.getText().toString().trim())) {
                             usernameString = account.username;
                             stateRole = account.role;
+                            driverForUser = account.driver;
+
                             Intent intent = new Intent(LoginActivity.this, MainActivity.class);
                             intent.putExtra("role", stateRole).putExtra("username", usernameString);
+                            if (stateRole.equals("user")) {
+                                intent.putExtra("driver", driverForUser);
+                            }
                             startActivity(intent);
                             finish();
                         } else {

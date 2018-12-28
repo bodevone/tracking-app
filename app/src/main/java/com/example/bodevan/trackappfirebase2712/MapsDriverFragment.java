@@ -303,13 +303,19 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             public void onDataChange(DataSnapshot dataSnapshot) {
                 if (dataSnapshot.exists()) {
                     // dataSnapshot is the "issue" node with all children with id 0
-                    //Driver driver = new Driver(username, lat, lon);
-                   // mDriverLocationsDatabeReference.push().setValue(driver);
-
                     HashMap<String, Object> driverInfo = new HashMap<>();
-                    driverInfo.put("latitude", lat);
-                    driverInfo.put("longitude", lon);
-                    mDriverLocationsDatabeReference.child(username).updateChildren(driverInfo);
+//                    driverInfo.put(dataSnapshot.getKey()+"/latitude", lat);
+//                    driverInfo.put(dataSnapshot.getKey()+"/longitude", lon);
+//                    String id = String.valueOf(dataSnapshot);
+//                    Toast.makeText(getActivity(), id, Toast.LENGTH_LONG).show();
+//                    mDriverLocationsDatabeReference.child(username).updateChildren(driverInfo);
+
+                    for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
+                        driverInfo.put(childSnapshot.getKey()+"/latitude", lat);
+                        driverInfo.put(childSnapshot.getKey()+"/longitude", lon);
+                    }
+
+                    mDriverLocationsDatabeReference.updateChildren(driverInfo);
                 }
             }
 
