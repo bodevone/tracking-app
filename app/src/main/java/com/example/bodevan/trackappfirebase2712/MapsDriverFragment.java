@@ -32,6 +32,8 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -66,14 +68,13 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
+    private FirebaseUser user;
 
-    private final String driverId = "-LUluIWzAjlfdiT87AI1";
+    private String uid;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
-
         super.onCreate(savedInstanceState);
-
     }
 
     @Nullable
@@ -100,9 +101,14 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
 
         Bundle bundle = this.getArguments();
-        username = bundle.getString("username");
+        username = bundle.getString("driver");
 
-        Toast.makeText(getActivity(), username, Toast.LENGTH_LONG).show();
+        user = FirebaseAuth.getInstance().getCurrentUser();
+        uid = user.getUid();
+
+        Toast.makeText(getActivity(), "Driver Fragment", Toast.LENGTH_LONG).show();
+
+        //Toast.makeText(getActivity(), username, Toast.LENGTH_LONG).show();
 
         return v;
     }
@@ -297,33 +303,38 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     }
 
     public void databaseUpdate(final double lat, final double lon) {
-        Query query = mDriverLocationsDatabeReference.orderByChild("username").equalTo(username);
-        query.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    // dataSnapshot is the "issue" node with all children with id 0
-                    HashMap<String, Object> driverInfo = new HashMap<>();
-//                    driverInfo.put(dataSnapshot.getKey()+"/latitude", lat);
-//                    driverInfo.put(dataSnapshot.getKey()+"/longitude", lon);
-//                    String id = String.valueOf(dataSnapshot);
-//                    Toast.makeText(getActivity(), id, Toast.LENGTH_LONG).show();
-//                    mDriverLocationsDatabeReference.child(username).updateChildren(driverInfo);
+        LatLng location = new LatLng(lat, lon);
+        mDriverLocationsDatabeReference.child(uid).setValue(location);
 
-                    for (DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
-                        driverInfo.put(childSnapshot.getKey()+"/latitude", lat);
-                        driverInfo.put(childSnapshot.getKey()+"/longitude", lon);
-                    }
 
-                    mDriverLocationsDatabeReference.updateChildren(driverInfo);
-                }
-            }
-
-            @Override
-            public void onCancelled(DatabaseError databaseError) {
-
-            }
-        });
+//        query.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(DataSnapshot dataSnapshot) {
+//
+//                // dataSnapshot is the "issue" node with all children with id 0
+//                HashMap<String, Object> driverInfo = new HashMap<>();
+////                    driverInfo.put(dataSnapshot.getKey()+"/latitude", lat);
+////                    driverInfo.put(dataSnapshot.getKey()+"/longitude", lon);
+////                    String id = String.valueOf(dataSnapshot);
+////                    Toast.makeText(getActivity(), id, Toast.LENGTH_LONG).show();
+////                    mDriverLocationsDatabeReference.child(username).updateChildren(driverInfo);
+//                LatLng location = new LatLng(lat, lon);
+//
+//
+//                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
+//                    driverInfo.put(childSnapshot.getKey() + "/latitude", lat);
+//                    driverInfo.put(childSnapshot.getKey() + "/longitude", lon);
+//                }
+//
+//                mDriverLocationsDatabeReference.updateChildren(driverInfo);
+//            }
+//
+//
+//            @Override
+//            public void onCancelled(DatabaseError databaseError) {
+//
+//            }
+//        });
     }
 }
 

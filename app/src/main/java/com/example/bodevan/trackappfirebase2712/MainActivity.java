@@ -19,6 +19,14 @@ import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.Query;
+import com.google.firebase.database.ValueEventListener;
+
+import java.util.HashMap;
 
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -26,14 +34,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private DrawerLayout drawer;
     ImageView header;
     NavigationView navigationView;
-    private String stateRole;
     private String driverForUser;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
 
-    private String username;
     private String uid;
 
+    private static String stateRole;
+
+    private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mDriversDatabaseReference;
+    private DatabaseReference mUsersDatabaseReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,13 +55,44 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         user = mAuth.getCurrentUser();
 
         if (user != null) {
-            // Name, email address, and profile photo Url
-            username = user.getEmail();
             uid = user.getUid();
         }
 
-        Toast.makeText(MainActivity.this, username, Toast.LENGTH_LONG).show();
-        Toast.makeText(MainActivity.this, uid, Toast.LENGTH_LONG).show();
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mDriversDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("drivers");
+        mUsersDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("users");
+
+
+        //Checking if your email in a list of drivers
+        mDriversDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot driver : dataSnapshot.getChildren()) {
+                    String value = String.valueOf(driver.getValue());
+                    if (value.equals(uid)) {
+                        Toast.makeText(MainActivity.this, "HYPE", Toast.LENGTH_LONG).show();
+                        stateRole = "driver";
+                    }
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        });
+
+        //Checking if your username in a list of drivers and if yes then add driver id
+        mUsersDatabaseReference.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.exists()) {
+                    driverForUser = String.valueOf(dataSnapshot.child("driver").getValue());
+                    stateRole = "user";
+                }
+            }
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        });
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.parseColor("#FDBE38"));
@@ -87,7 +129,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 mAuth.signOut();
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 startActivity(intent);
-
                 finish();
         }
 
@@ -126,17 +167,18 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void enterMap(){
         Bundle bundle = new Bundle();
-        bundle.putString("username",username);
-        bundle.putString("driver", driverForUser);
-        MapsDriverFragment fragDriver = new MapsDriverFragment();;
+        bundle.putString("driver", uid);
+        bundle.putString("driver_for_user", driverForUser);
+        MapsDriverFragment fragDriver = new MapsDriverFragment();
         MapsUserFragment fragUser = new MapsUserFragment();
         fragDriver.setArguments(bundle);
         fragUser.setArguments(bundle);
+        Toast.makeText(MainActivity.this, String.valueOf(stateRole), Toast.LENGTH_LONG).show();
         if (true) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragDriver).commit();
         }
-        else {
+        else if (stateRole.equals("user")){
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragUser).commit();
         }
