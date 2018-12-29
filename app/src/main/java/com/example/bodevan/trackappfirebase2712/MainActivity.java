@@ -17,6 +17,9 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -24,23 +27,30 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     ImageView header;
     NavigationView navigationView;
     private String stateRole;
-    private String username;
     private String driverForUser;
-    public final String driver = "driver";
-    public final String user = "user";
+    private FirebaseAuth mAuth;
+    private FirebaseUser user;
+
+    private String username;
+    private String uid;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        stateRole = getIntent().getExtras().getString("role");
-        username = getIntent().getExtras().getString("username");
+        mAuth = FirebaseAuth.getInstance();
+        user = mAuth.getCurrentUser();
 
-        if (stateRole.equals(user)) {
-            driverForUser = getIntent().getExtras().getString("driver");
+        if (user != null) {
+            // Name, email address, and profile photo Url
+            username = user.getEmail();
+            uid = user.getUid();
         }
 
+        Toast.makeText(MainActivity.this, username, Toast.LENGTH_LONG).show();
+        Toast.makeText(MainActivity.this, uid, Toast.LENGTH_LONG).show();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.parseColor("#FDBE38"));
@@ -74,8 +84,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                         new InfoFragment()).commit();
                 break;
             case R.id.nav_logout:
+                mAuth.signOut();
                 Intent intent = new Intent(MainActivity.this, LoginActivity.class);
                 startActivity(intent);
+
                 finish();
         }
 
@@ -120,7 +132,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         MapsUserFragment fragUser = new MapsUserFragment();
         fragDriver.setArguments(bundle);
         fragUser.setArguments(bundle);
-        if (stateRole.equals(driver)){
+        if (true) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragDriver).commit();
         }
