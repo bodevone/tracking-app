@@ -27,6 +27,7 @@ import com.google.firebase.database.Query;
 import com.google.firebase.database.ValueEventListener;
 
 import java.util.HashMap;
+import java.util.concurrent.CountDownLatch;
 
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -40,7 +41,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     private String uid;
 
-    private static String stateRole;
+    private String stateRole;
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriversDatabaseReference;
@@ -58,10 +59,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             uid = user.getUid();
         }
 
+
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mDriversDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("drivers");
         mUsersDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("users");
-
 
         //Checking if your email in a list of drivers
         mDriversDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -70,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 for (DataSnapshot driver : dataSnapshot.getChildren()) {
                     String value = String.valueOf(driver.getValue());
                     if (value.equals(uid)) {
-                        Toast.makeText(MainActivity.this, "HYPE", Toast.LENGTH_LONG).show();
                         stateRole = "driver";
                     }
                 }
@@ -107,8 +107,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(R.color.text_color));
         drawer.addDrawerListener(toggle);
         toggle.syncState();
-
-        enterMap();
     }
 
     @Override
@@ -174,7 +172,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         fragDriver.setArguments(bundle);
         fragUser.setArguments(bundle);
         Toast.makeText(MainActivity.this, String.valueOf(stateRole), Toast.LENGTH_LONG).show();
-        if (true) {
+        if (stateRole.equals("driver")) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragDriver).commit();
         }

@@ -39,8 +39,6 @@ public class LoginActivity extends AppCompatActivity {
     private String driverForUser;
     private ProgressBar mProgressBar;
 
-    private FirebaseDatabase mFirebaseDatabase;
-    private DatabaseReference mAccountDatabeReference;
 
     private FirebaseAuth mAuth;
 
@@ -64,12 +62,6 @@ public class LoginActivity extends AppCompatActivity {
             startActivity(new Intent(LoginActivity.this, MainActivity.class));
             finish();
         }
-
-
-        mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mAccountDatabeReference = mFirebaseDatabase.getReference().child("auth").child("accounts");
-
-        mAuth = FirebaseAuth.getInstance();
 
 //        lgn.setOnClickListener(new View.OnClickListener() {
 //            @Override

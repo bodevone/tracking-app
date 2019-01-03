@@ -27,10 +27,6 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.Query;
-import com.google.firebase.database.ValueEventListener;
-
-import java.util.HashMap;
 
 public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
@@ -39,6 +35,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
+    private ChildEventListener mChildEventListener;
 
     private String username;
     private String driverForUser;
@@ -71,91 +68,103 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         Bundle bundle = this.getArguments();
         driverForUser = bundle.getString("driver_for_user");
 
-        Toast.makeText(getActivity(), "User Fragment", Toast.LENGTH_LONG).show();
-
         updateDatabase();
 
         return v;
     }
 
-
-    /**
-     * Manipulates the map once available.
-     * This callback is triggered when the map is ready to be used.
-     * This is where we can add markers or lines, add listeners or move the camera. In this case,
-     * we just add a marker near Sydney, Australia.
-     * If Google Play services is not installed on the device, the user will be prompted to install
-     * it inside the SupportMapFragment. This method will only be triggered once the user has
-     * installed Google Play services and returned to the app.
-     */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-        // Add a marker in Sydney and move the camera
-//        LatLng sydney = new LatLng(-34, 151);
-//        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+
     }
 
-    private void updateDatabase(){
-        Query query = mDriverLocationsDatabeReference.orderByChild("username").equalTo(driverForUser);
-        query.addListenerForSingleValueEvent(new ValueEventListener() {
+    private void updateDatabase() {
+        mDriverLocationsDatabeReference.addChildEventListener(new ChildEventListener() {
             @Override
-            public void onDataChange(DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    // dataSnapshot is the "issue" node with all children with id 0
-                    HashMap<String, Object> driverInfo = new HashMap<>();
-//                    driverInfo.put(dataSnapshot.getKey()+"/latitude", lat);
-//                    driverInfo.put(dataSnapshot.getKey()+"/longitude", lon);
-//                    String id = String.valueOf(dataSnapshot);
-//                    Toast.makeText(getActivity(), id, Toast.LENGTH_LONG).show();
-//                    mDriverLocationsDatabeReference.child(username).updateChildren(driverInfo);
+            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
 
-                    for (final DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
-                        childSnapshot.getRef().addChildEventListener(new ChildEventListener() {
-                            @Override
-                            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
-                            }
-
-                            @Override
-                            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                                double lat = (double) childSnapshot.child("latitude").getValue();
-                                double lon = (double) childSnapshot.child("longitude").getValue();
-                                drawMarker(lat, lon);
-
-                            }
-
-                            @Override
-                            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
-
-                            }
-
-                            @Override
-                            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
-                            }
-
-                            @Override
-                            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                            }
-                        });
-//                        driverInfo.put(childSnapshot.getKey()+"/latitude", lat);
-//                        driverInfo.put(childSnapshot.getKey()+"/longitude", lon);
-                    }
-                }
             }
 
             @Override
-            public void onCancelled(DatabaseError databaseError) {
+            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+                //DriverLocation info = dataSnapshot.child(driverForUser).getValue(DriverLocation.class);
+                Toast.makeText(getActivity(), String.valueOf(dataSnapshot.child(driverForUser).child("latitude").getValue()), Toast.LENGTH_LONG).show();
+            }
+
+            @Override
+            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+
+            }
+
+            @Override
+            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
         });
+
+//        Query query = mDriverLocationsDatabeReference.orderByChild("username").equalTo(driverForUser);
+//        query.addListenerForSingleValueEvent(new ValueEventListener() {
+//            @Override
+//            public void onDataChange(DataSnapshot dataSnapshot) {
+//                if (dataSnapshot.exists()) {
+//                    // dataSnapshot is the "issue" node with all children with id 0
+//                    HashMap<String, Object> driverInfo = new HashMap<>();
+////                    driverInfo.put(dataSnapshot.getKey()+"/latitude", lat);
+////                    driverInfo.put(dataSnapshot.getKey()+"/longitude", lon);
+////                    String id = String.valueOf(dataSnapshot);
+////                    Toast.makeText(getActivity(), id, Toast.LENGTH_LONG).show();
+////                    mDriverLocationsDatabeReference.child(username).updateChildren(driverInfo);
+//
+//                    for (final DataSnapshot childSnapshot: dataSnapshot.getChildren()) {
+//                        childSnapshot.getRef().addChildEventListener(new ChildEventListener() {
+//                            @Override
+//                            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+//
+//                            }
+//
+//                            @Override
+//                            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+//                                double lat = (double) childSnapshot.child("latitude").getValue();
+//                                double lon = (double) childSnapshot.child("longitude").getValue();
+//                                drawMarker(lat, lon);
+//
+//                            }
+//
+//                            @Override
+//                            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+//
+//                            }
+//
+//                            @Override
+//                            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+//
+//                            }
+//
+//                            @Override
+//                            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//                            }
+//                        });
+////                        driverInfo.put(childSnapshot.getKey()+"/latitude", lat);
+////                        driverInfo.put(childSnapshot.getKey()+"/longitude", lon);
+//                    }
+//                }
+//            }
+//
+//            @Override
+//            public void onCancelled(DatabaseError databaseError) {
+//
+//            }
+//        });
     }
 
 
-    public void drawMarker(double driverLat, double driverLon){
+    public void drawMarker(double driverLat, double driverLon) {
         int height = 500;
         int width = 500;
         BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.car);
