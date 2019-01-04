@@ -12,6 +12,8 @@ import android.support.v4.app.FragmentTransaction;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -27,11 +29,13 @@ import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
     SupportMapFragment mapFrag;
+    Marker currentLocationMarker;
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
@@ -42,6 +46,14 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     private boolean zoomed = false;
     private boolean firstPass = true;
+
+    final private int height = 500;
+    final private int width = 500;
+
+    private TextView onlineTime;
+    private Button zoom;
+
+    LatLng latLng;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -68,6 +80,9 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         Bundle bundle = this.getArguments();
         driverForUser = bundle.getString("driver_for_user");
 
+        onlineTime = v.findViewById(R.id.lastonline);
+        zoom = v.findViewById(R.id.zoom);
+
         updateDatabase();
 
         return v;
@@ -75,37 +90,51 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
+        mMap = googleMap;
     }
 
     private void updateDatabase() {
-        mDriverLocationsDatabeReference.addChildEventListener(new ChildEventListener() {
+
+        ValueEventListener listener = new ValueEventListener() {
             @Override
-            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                DriverLocation info = dataSnapshot.getValue(DriverLocation.class);
+                drawMarker(info.latitude, info.longitude);
+                onlineTime.setText("Водитель был в сети: " + info.timestamp);
             }
-
-            @Override
-            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-                //DriverLocation info = dataSnapshot.child(driverForUser).getValue(DriverLocation.class);
-                Toast.makeText(getActivity(), String.valueOf(dataSnapshot.child(driverForUser).child("latitude").getValue()), Toast.LENGTH_LONG).show();
-            }
-
-            @Override
-            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
-
-            }
-
-            @Override
-            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
-
-            }
-
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
-
             }
-        });
+        };
+        mDriverLocationsDatabeReference.child(driverForUser).addValueEventListener(listener);
+
+//        mDriverLocationsDatabeReference.addChildEventListener(new ChildEventListener() {
+//            @Override
+//            public void onChildAdded(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+//
+//            }
+//
+//            @Override
+//            public void onChildChanged(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+//                //DriverLocation info = dataSnapshot.child(driverForUser).getValue(DriverLocation.class);
+//                Toast.makeText(getActivity(), String.valueOf(dataSnapshot.child(driverForUser).child("latitude").getValue()), Toast.LENGTH_LONG).show();
+//            }
+//
+//            @Override
+//            public void onChildRemoved(@NonNull DataSnapshot dataSnapshot) {
+//
+//            }
+//
+//            @Override
+//            public void onChildMoved(@NonNull DataSnapshot dataSnapshot, @Nullable String s) {
+//
+//            }
+//
+//            @Override
+//            public void onCancelled(@NonNull DatabaseError databaseError) {
+//
+//            }
+//        });
 
 //        Query query = mDriverLocationsDatabeReference.orderByChild("username").equalTo(driverForUser);
 //        query.addListenerForSingleValueEvent(new ValueEventListener() {
@@ -165,19 +194,20 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
 
     public void drawMarker(double driverLat, double driverLon) {
-        int height = 500;
-        int width = 500;
+//        if (currentLocationMarker != null) {
+//            currentLocationMarker.remove();
+//        }
+        mMap.clear();
         BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.car);
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
 
         LatLng currentLocation = new LatLng(driverLat, driverLon);
-        LatLng latLng = new LatLng(driverLat, driverLon);
-        //TODO: Location is set only upon launch of map without constant update;
-        //TODO: updates for dirvers are observed only using setMyLocationEnabled
-        Marker currentLocationMarker = mMap.addMarker(new MarkerOptions().flat(true)
+        latLng = new LatLng(driverLat, driverLon);
+
+        currentLocationMarker = mMap.addMarker(new MarkerOptions().flat(true)
                 .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
-                .anchor(0.5f, 0.5f).position(currentLocation).title("Current Location"));
+                .anchor(0.5f, 0.5f).position(currentLocation).title("Driver Location"));
 
         //currentLocationMarker.setPosition(latLng);
         // Move the camera instantly to hamburg with a zoom of 15.
@@ -188,13 +218,19 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             mMap.animateCamera(CameraUpdateFactory.zoomTo(12), 2000, null);
             zoomed = true;
         }
-        if (!firstPass) {
-            currentLocationMarker.remove();
-        }
-        firstPass = false;
         Toast.makeText(getActivity(), "Latitude = " +
-                        driverLat + "" + "Longitude = " + driverLon,
+                        driverLat + " " + "Longitude = " + driverLon,
                 Toast.LENGTH_LONG).show();
+
+        if (latLng != null) {
+            zoom.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
+                    mMap.animateCamera(CameraUpdateFactory.zoomTo(14), 500, null);
+                }
+            });
+        }
     }
 
 }

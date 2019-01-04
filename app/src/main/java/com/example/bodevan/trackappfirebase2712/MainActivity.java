@@ -171,7 +171,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         MapsUserFragment fragUser = new MapsUserFragment();
         fragDriver.setArguments(bundle);
         fragUser.setArguments(bundle);
-        Toast.makeText(MainActivity.this, String.valueOf(stateRole), Toast.LENGTH_LONG).show();
         if (stateRole.equals("driver")) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragDriver).commit();
