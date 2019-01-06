@@ -41,8 +41,11 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
+import java.util.Locale;
 
 import static android.content.ContentValues.TAG;
 
@@ -292,8 +295,17 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     }
 
     public void databaseUpdate(final double lat, final double lon) {
-        String date = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
-        DriverLocation info = new DriverLocation(lat, lon, date);
+        Locale loc = new Locale("ru", "RU");
+
+        DateFormat dateFormat = DateFormat.getDateInstance(DateFormat.DEFAULT, loc);
+        String date = dateFormat.format(new Date());
+
+        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT, loc);
+        String time = timeFormat.format(new Date());
+
+        String timestamp = date + time;
+        //String date = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
+        DriverLocation info = new DriverLocation(lat, lon, timestamp);
         mDriverLocationsDatabeReference.child(uid).setValue(info);
     }
 }

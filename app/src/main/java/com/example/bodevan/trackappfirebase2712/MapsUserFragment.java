@@ -155,7 +155,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         // Zoom in, animating the camera.
         if (!zoomed) {
             mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
-            mMap.animateCamera(CameraUpdateFactory.zoomTo(12), 2000, null);
+            mMap.animateCamera(CameraUpdateFactory.zoomTo(13), 2000, null);
             zoomed = true;
         }
         Toast.makeText(getActivity(), "Latitude = " +

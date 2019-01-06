@@ -107,6 +107,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(R.color.text_color));
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
+        drawer.openDrawer(GravityCompat.START);
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                new InitialFragment()).commit();
     }
 
     @Override
@@ -156,7 +160,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             } else if (manager.findFragmentById(R.id.fragment_container) instanceof InfoFragment) {
                 enterMap();
             }
-            else{
+            else {
                 super.onBackPressed();
             }
 
@@ -174,8 +178,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         if (stateRole.equals("driver")) {
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragDriver).commit();
-        }
-        else if (stateRole.equals("user")){
+        } else if (stateRole.equals("user")){
             getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                     fragUser).commit();
         }
