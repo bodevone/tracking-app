@@ -135,7 +135,10 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void drawMarker(double driverLat, double driverLon) {
-        mMap.clear();
+        //mMap.clear();
+        if (currentLocationMarker != null) {
+            currentLocationMarker.remove();
+        }
         BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.car);
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);

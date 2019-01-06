@@ -32,10 +32,14 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -62,6 +66,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
+    private DatabaseReference mDriverPinsDatabaseReference;
     private FirebaseUser user;
 
     @Override
@@ -87,6 +92,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         //mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
+        mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
 
         Bundle bundle = this.getArguments();
         username = bundle.getString("driver");
@@ -137,6 +143,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             Log.e(TAG, "Can't find style. Error: ", e);
         }
 
+        drawPins();
+
         //Initialize Google Play Services
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             if (ContextCompat.checkSelfPermission(getActivity(),
@@ -149,6 +157,26 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             buildGoogleApiClient();
             mMap.setMyLocationEnabled(true);
         }
+    }
+
+    public void drawPins() {
+        DatabaseReference ref = mDriverPinsDatabaseReference.child(uid);
+        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    //LatLng location = (LatLng) snapshot.getValue();
+                    double latitude = (double) snapshot.child("latitude").getValue();
+                    double longitude = (double) snapshot.child("longitude").getValue();
+                    //Toast.makeText(getActivity(), String.valueOf(latitude), Toast.LENGTH_LONG).show();
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        });
     }
 
     protected synchronized void buildGoogleApiClient() {
