@@ -72,9 +72,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                     String value = String.valueOf(driver.getValue());
                     if (value.equals(uid)) {
                         stateRole = "driver";
+                        enterDriverMap();
                     }
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
@@ -87,8 +89,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 if (dataSnapshot.exists()) {
                     driverForUser = String.valueOf(dataSnapshot.child("driver").getValue());
                     stateRole = "user";
+                    enterUserMap();
                 }
             }
+
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
@@ -108,16 +112,16 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.addDrawerListener(toggle);
         toggle.syncState();
 
-        drawer.openDrawer(GravityCompat.START);
-        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                new InitialFragment()).commit();
+//        drawer.openDrawer(GravityCompat.START);
+//        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+//                new InitialFragment()).commit();
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_map:
-                enterMap();
+                decideMap();
                 break;
             case R.id.nav_feedback:
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
@@ -139,7 +143,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         header.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                enterMap();
+                decideMap();
                 drawer.closeDrawer(GravityCompat.START);
             }
         });
@@ -156,32 +160,59 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             FragmentManager manager = getSupportFragmentManager();
             if (manager.findFragmentById(R.id.fragment_container) instanceof FeedbackFragment) {
-                enterMap();
+                decideMap();
             } else if (manager.findFragmentById(R.id.fragment_container) instanceof InfoFragment) {
-                enterMap();
-            }
-            else {
+                decideMap();
+            } else {
                 super.onBackPressed();
             }
 
         }
     }
 
-    public void enterMap(){
+    public void enterDriverMap() {
         Bundle bundle = new Bundle();
         bundle.putString("driver", uid);
-        bundle.putString("driver_for_user", driverForUser);
         MapsDriverFragment fragDriver = new MapsDriverFragment();
-        MapsUserFragment fragUser = new MapsUserFragment();
         fragDriver.setArguments(bundle);
-        fragUser.setArguments(bundle);
-        if (stateRole.equals("driver")) {
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    fragDriver).commit();
-        } else if (stateRole.equals("user")){
-            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                    fragUser).commit();
-        }
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                fragDriver).commit();
         navigationView.setCheckedItem(R.id.nav_map);
     }
+
+    public void enterUserMap() {
+        Bundle bundle = new Bundle();
+        bundle.putString("driver_for_user", driverForUser);
+        MapsUserFragment fragUser = new MapsUserFragment();
+        fragUser.setArguments(bundle);
+        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+                fragUser).commit();
+        navigationView.setCheckedItem(R.id.nav_map);
+    }
+
+    public void decideMap() {
+        if (stateRole.equals("driver")) {
+            enterDriverMap();
+        } else if (stateRole.equals("user")) {
+            enterUserMap();
+        }
+    }
+//
+//    public void enterMap() {
+//        Bundle bundle = new Bundle();
+//        bundle.putString("driver", uid);
+//        bundle.putString("driver_for_user", driverForUser);
+//        MapsDriverFragment fragDriver = new MapsDriverFragment();
+//        MapsUserFragment fragUser = new MapsUserFragment();
+//        fragDriver.setArguments(bundle);
+//        fragUser.setArguments(bundle);
+//        if (stateRole.equals("driver")) {
+//            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+//                    fragDriver).commit();
+//        } else if (stateRole.equals("user")) {
+//            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
+//                    fragUser).commit();
+//        }
+//        navigationView.setCheckedItem(R.id.nav_map);
+//    }
 }
