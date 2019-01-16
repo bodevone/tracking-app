@@ -133,15 +133,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 finish();
         }
 
-//        header = findViewById(R.id.header);
-//
-//        header.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                decideMap();
-//                drawer.closeDrawer(GravityCompat.START);
-//            }
-//        });
+        header = findViewById(R.id.header);
+
+        header.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                decideMap();
+                drawer.closeDrawer(GravityCompat.START);
+            }
+        });
 
         drawer.closeDrawer(GravityCompat.START);
 

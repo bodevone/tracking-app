@@ -1,5 +1,6 @@
 package com.example.bodevan.trackappfirebase2712;
 
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.support.annotation.NonNull;
@@ -8,6 +9,7 @@ import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,6 +23,7 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.database.DataSnapshot;
@@ -32,6 +35,8 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+
+import static android.content.ContentValues.TAG;
 
 public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
@@ -91,6 +96,21 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
 
+        //Styling
+        try {
+            // Customise the styling of the base map using a JSON object defined
+            // in a raw resource file.
+            boolean success = googleMap.setMapStyle(
+                    MapStyleOptions.loadRawResourceStyle(
+                            getActivity(), R.raw.mapstyle));
+
+            if (!success) {
+                Log.e(TAG, "Style parsing failed.");
+            }
+        } catch (Resources.NotFoundException e) {
+            Log.e(TAG, "Can't find style. Error: ", e);
+        }
+
         drawPins();
     }
 
@@ -101,7 +121,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
+                    mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
                 }
             }
 
@@ -143,7 +164,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
         currentLocationMarker = mMap.addMarker(new MarkerOptions().flat(true)
                 .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
-                .anchor(0.5f, 0.5f).position(currentLocation).title("Driver Location"));
+                .anchor(0.5f, 0.5f).position(currentLocation));
 
         // Move the camera instantly to hamburg with a zoom of 15.
 
