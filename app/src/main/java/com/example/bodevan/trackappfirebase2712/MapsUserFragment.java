@@ -38,13 +38,13 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private GoogleMap mMap;
     SupportMapFragment mapFrag;
     Marker currentLocationMarker;
+    LatLng latLng;
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
     private DatabaseReference mDriverPinsDatabaseReference;
 
     private String driverForUser;
-
     private boolean zoomed = false;
 
     final private int height = 500;
@@ -52,9 +52,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     private TextView onlineTime;
     private ImageView zoom;
-
-    LatLng latLng;
-    ArrayList<LatLng> pins;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -98,15 +95,12 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void drawPins() {
-        DatabaseReference ref = mDriverPinsDatabaseReference.child(driverForUser);
-        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+        ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    //LatLng location = (LatLng) snapshot.getValue();
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
-                    //Toast.makeText(getActivity(), String.valueOf(latitude), Toast.LENGTH_LONG).show();
                     mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
                 }
             }
@@ -114,7 +108,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
-        });
+        };
+        mDriverPinsDatabaseReference.child(driverForUser).addValueEventListener(listener);
     }
 
     private void updateDatabase() {
@@ -158,9 +153,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             mMap.animateCamera(CameraUpdateFactory.zoomTo(13), 2000, null);
             zoomed = true;
         }
-        Toast.makeText(getActivity(), "Latitude = " +
-                        driverLat + " " + "Longitude = " + driverLon,
-                Toast.LENGTH_LONG).show();
 
         if (latLng != null) {
             zoom.setOnClickListener(new View.OnClickListener() {

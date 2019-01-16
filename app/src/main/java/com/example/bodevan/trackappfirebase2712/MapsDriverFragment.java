@@ -58,7 +58,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
     SupportMapFragment mapFrag;
-    //FusedLocationProviderClient mFusedLocationClient;
 
     private boolean zoomed = false;
 
@@ -163,15 +162,13 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     }
 
     public void drawPins() {
-        DatabaseReference ref = mDriverPinsDatabaseReference.child(uid);
-        ref.addListenerForSingleValueEvent(new ValueEventListener() {
+
+        ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    //LatLng location = (LatLng) snapshot.getValue();
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
-                    //Toast.makeText(getActivity(), String.valueOf(latitude), Toast.LENGTH_LONG).show();
                     mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
                 }
             }
@@ -179,7 +176,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
-        });
+        };
+        mDriverPinsDatabaseReference.child(uid).addValueEventListener(listener);
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -194,8 +192,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     @Override
     public void onConnected(@Nullable Bundle bundle) {
         mLocationRequest = new LocationRequest();
-        mLocationRequest.setInterval(100000);
-        mLocationRequest.setFastestInterval(10000);
+        mLocationRequest.setInterval(10000);
+        mLocationRequest.setFastestInterval(1000);
 
         //TODO: decide on priority to be chosen - might be PRIORITY_HIGH_ACCURACY
         mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
@@ -304,7 +302,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         String time = timeFormat.format(new Date());
 
         String timestamp = date + time;
-        //String date = new SimpleDateFormat("yyyyMMdd_HHmmss").format(Calendar.getInstance().getTime());
         DriverLocation info = new DriverLocation(lat, lon, timestamp);
         mDriverLocationsDatabeReference.child(uid).setValue(info);
     }
