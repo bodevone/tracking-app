@@ -115,14 +115,22 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void drawPins() {
+        final List<Marker> markers = new ArrayList<Marker>();
+
         ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (int i = 0; i < markers.size(); i++) {
+                    markers.get(i).remove();
+                }
+                markers.clear();
+
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+                    markers.add(marker);
                 }
             }
 

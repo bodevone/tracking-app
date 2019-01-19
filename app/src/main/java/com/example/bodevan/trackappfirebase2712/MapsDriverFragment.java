@@ -32,9 +32,11 @@ import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.ChildEventListener;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -43,8 +45,10 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import static android.content.ContentValues.TAG;
@@ -162,14 +166,21 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     }
 
     public void drawPins() {
+        final List<Marker> markers = new ArrayList<Marker>();
+
 
         ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (int i = 0; i < markers.size(); i++) {
+                    markers.get(i).remove();
+                }
+                markers.clear();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
-                    mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
+                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
+                    markers.add(marker);
                 }
             }
 
