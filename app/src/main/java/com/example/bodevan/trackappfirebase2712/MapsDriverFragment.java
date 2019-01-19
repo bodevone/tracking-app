@@ -191,6 +191,27 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         mDriverPinsDatabaseReference.child(uid).addValueEventListener(listener);
     }
 
+    public void removePins() {
+        ValueEventListener listener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    double latitude = (double) snapshot.child("latitude").getValue();
+                    double longitude = (double) snapshot.child("longitude").getValue();
+                    double distance = Math.sqrt((driverLat - latitude) * (driverLat - latitude) + (driverLon - longitude) * (driverLon - longitude));
+                    if(distance < 5.0E-4) {
+                        mDriverPinsDatabaseReference.child(uid).child(snapshot.getKey() ).removeValue();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        };
+        mDriverPinsDatabaseReference.child(uid).addValueEventListener(listener);
+    }
+
     protected synchronized void buildGoogleApiClient() {
         mGoogleApiClient = new GoogleApiClient.Builder(getActivity())
                 .addConnectionCallbacks(this)
@@ -240,6 +261,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
             driverLat = location.getLatitude();
             driverLon = location.getLongitude();
+            removePins();
 
             databaseUpdate(driverLat, driverLon);
         }
