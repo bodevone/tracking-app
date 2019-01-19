@@ -1,9 +1,15 @@
 package com.example.bodevan.trackappfirebase2712;
 
 import android.Manifest;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.os.Build;
@@ -14,6 +20,8 @@ import android.support.v4.app.Fragment;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -48,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 
 import static android.content.ContentValues.TAG;
+import static android.content.Context.NOTIFICATION_SERVICE;
 
 public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
         GoogleApiClient.ConnectionCallbacks,
@@ -59,6 +68,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
     Marker currentLocationMarker;
     LatLng latLng;
 
+    public static final String CHANNEL_1_ID = "channel1";
+    public static final String CHANNEL_2_ID = "channel2";
 
     GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
@@ -116,7 +127,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
 
         return v;
     }
-
 
 
     @Override
@@ -349,12 +359,33 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
             });
         }
 
-        if (!firstTime) {
+        if (firstTime) {
             Toast.makeText(getActivity(), "My location:" + myLat + myLon, Toast.LENGTH_LONG).show();
+            double distance = Math.sqrt((driverLat - myLat) * (driverLat - myLat) + (driverLon - myLon) * (driverLon - myLon));
+            if (distance < 5.0E-4) {
+                sendNotification();
 
-            firstTime = true;
+            }
         }
+        firstTime = true;
 
+    }
+
+    private void sendNotification() {
+//        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(getContext(), "M_CH_ID");
+//
+//        notificationBuilder.setAutoCancel(true)
+//                .setDefaults(Notification.DEFAULT_ALL)
+//                .setWhen(System.currentTimeMillis())
+//                .setTicker("Hearty365")
+//                .setPriority(Notification.PRIORITY_MAX) // this is deprecated in API 26 but you can still use for below 26. check below update for 26 API
+//                .setContentTitle("Водитель Прибыл!")
+//                .setContentText("Ваш Водитель Вас Ожидает.");
+//
+//        NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
+//        notificationManager.notify(1, notificationBuilder.build());
+
+        }
     }
 
 }
