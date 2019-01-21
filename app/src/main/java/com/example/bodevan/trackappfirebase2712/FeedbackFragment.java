@@ -39,6 +39,7 @@ public class FeedbackFragment extends Fragment {
     private FirebaseAuth mAuth;
     private FirebaseUser user;
     private String uid;
+    private String email;
 
     private String username;
 
@@ -80,7 +81,7 @@ public class FeedbackFragment extends Fragment {
                     Toast.makeText(getActivity(), "Введите Отзыв!", Toast.LENGTH_SHORT).show();
                     return;
                 } else {
-                    findUsername(nameUser, feedbackUser);
+                    sendFeedback(nameUser, feedbackUser);
                 }
             }
         });
@@ -94,37 +95,22 @@ public class FeedbackFragment extends Fragment {
         return input;
     }
 
-    private void findUsername(final String name, final String feedback) {
+    private void sendFeedback(final String name, final String feedback) {
         mAuth = FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
         uid = user.getUid();
+        email = user.getEmail();
 
-        mAccountsReferenceDatabase.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    username = String.valueOf(dataSnapshot.child("username").getValue());
-                    sendFeedback(name, feedback, username);
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        });
-
-
-    }
-
-    private void sendFeedback(String name, String feedback, String usernameToSend) {
         Map feedbackMap = new HashMap();
         feedbackMap.put("feedback", feedback);
         feedbackMap.put("name", name);
-        feedbackMap.put("username", usernameToSend);
+        feedbackMap.put("username", email);
 
         mFeedbackReferenceDatabase.push().setValue(feedbackMap);
 
         Toast.makeText(getActivity(), "Отзыв отправлен", Toast.LENGTH_LONG).show();
 
     }
+
+
 }

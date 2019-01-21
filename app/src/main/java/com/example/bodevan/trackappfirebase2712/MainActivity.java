@@ -14,6 +14,7 @@ import android.support.v7.widget.Toolbar;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
@@ -29,11 +30,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     private DrawerLayout drawer;
     ImageView header;
     NavigationView navigationView;
-    private String driverForUser;
+    private String driverForUserEmail;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
 
     private String uid;
+    private String email;
 
     private String stateRole;
 
@@ -51,6 +53,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         if (user != null) {
             uid = user.getUid();
+            email = user.getEmail();
         }
 
 
@@ -62,10 +65,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         mDriversDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot driver : dataSnapshot.getChildren()) {
-                    String value = String.valueOf(driver.child("driver").getValue());
+                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
+                    String value = String.valueOf(childSnapshot.child("driver").getValue());
 
-                    if (value.equals(uid)) {
+                    if (value.equals(email)) {
                         stateRole = "driver";
                         enterDriverMap();
                     }
@@ -77,14 +80,17 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             }
         });
 
-        //Checking if your username in a list of drivers and if yes then add driver id
-        mUsersDatabaseReference.child(uid).addListenerForSingleValueEvent(new ValueEventListener() {
+        //Checking if your username in a list of users
+        mUsersDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.exists()) {
-                    driverForUser = String.valueOf(dataSnapshot.child("driver").getValue());
-                    stateRole = "user";
-                    enterUserMap();
+                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
+                    String value = String.valueOf(childSnapshot.child("user").getValue());
+                    if (value.equals(email)) {
+                        driverForUserEmail = String.valueOf(childSnapshot.child("driver").getValue());
+                        stateRole = "user";
+                        enterUserMap();
+                    }
                 }
             }
 
@@ -106,10 +112,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(R.color.text_color));
         drawer.addDrawerListener(toggle);
         toggle.syncState();
-
-//        drawer.openDrawer(GravityCompat.START);
-//        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-//                new InitialFragment()).commit();
     }
 
     @Override
@@ -167,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void enterDriverMap() {
         Bundle bundle = new Bundle();
-        bundle.putString("driver", uid);
+        bundle.putString("driver", email);
         MapsDriverFragment fragDriver = new MapsDriverFragment();
         fragDriver.setArguments(bundle);
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
@@ -177,7 +179,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void enterUserMap() {
         Bundle bundle = new Bundle();
-        bundle.putString("driver_for_user", driverForUser);
+        bundle.putString("driver_for_user", driverForUserEmail);
         MapsUserFragment fragUser = new MapsUserFragment();
         fragUser.setArguments(bundle);
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,

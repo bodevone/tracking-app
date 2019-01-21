@@ -68,9 +68,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
     Marker currentLocationMarker;
     LatLng latLng;
 
-    public static final String CHANNEL_1_ID = "channel1";
-    public static final String CHANNEL_2_ID = "channel2";
-
     GoogleApiClient mGoogleApiClient;
     LocationRequest mLocationRequest;
 
@@ -78,7 +75,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
     private DatabaseReference mDriverLocationsDatabeReference;
     private DatabaseReference mDriverPinsDatabaseReference;
 
-    private String driverForUser;
+    private String driverEmail;
+    public String driverName;
     private boolean zoomed = false;
     private boolean firstTime = false;
 
@@ -118,7 +116,10 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
 
         Bundle bundle = this.getArguments();
-        driverForUser = bundle.getString("driver_for_user");
+        driverEmail = bundle.getString("driver_for_user");
+        driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
+
+        Toast.makeText(getActivity(), driverName, Toast.LENGTH_LONG).show();
 
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
@@ -188,7 +189,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(driverForUser).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -309,20 +310,37 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
 
 
     private void updateDatabase() {
-
-        ValueEventListener listener = new ValueEventListener() {
+        mDriverLocationsDatabeReference.addValueEventListener(new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                DriverLocation info = dataSnapshot.getValue(DriverLocation.class);
-                drawMarker(info.latitude, info.longitude);
-                onlineTime.setText("Водитель был в сети: " + info.timestamp);
+            public void onDataChange(@NonNull DataSnapshot snapshot) {
+                if (snapshot.hasChild(driverName)) {
+
+                    ValueEventListener listener = new ValueEventListener() {
+                        @Override
+                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                            DriverLocation info = dataSnapshot.getValue(DriverLocation.class);
+                            drawMarker(info.latitude, info.longitude);
+                            onlineTime.setText("Водитель был в сети: " + info.timestamp);
+                        }
+
+                        @Override
+                        public void onCancelled(@NonNull DatabaseError databaseError) {
+                        }
+                    };
+                    mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listener);
+
+                } else {
+                    onlineTime.setText("Водитель еще не заходил");
+                }
             }
 
             @Override
             public void onCancelled(@NonNull DatabaseError databaseError) {
+
             }
-        };
-        mDriverLocationsDatabeReference.child(driverForUser).addValueEventListener(listener);
+        });
+
+
     }
 
     public void drawMarker(double driverLat, double driverLon) {
@@ -385,7 +403,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
 //        NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
 //        notificationManager.notify(1, notificationBuilder.build());
 
-        }
+
+        
     }
 
 }

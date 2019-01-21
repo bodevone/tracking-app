@@ -48,8 +48,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static android.content.ContentValues.TAG;
 
@@ -63,12 +65,15 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     LocationRequest mLocationRequest;
     SupportMapFragment mapFrag;
 
+    private FusedLocationProviderClient mFusedLocationClient;
+
     private boolean zoomed = false;
 
     public static double driverLat;
     public static double driverLon;
     private String username;
     private String uid;
+    private String driverEmail;
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
@@ -101,10 +106,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
 
         Bundle bundle = this.getArguments();
-        username = bundle.getString("driver");
-
-        user = FirebaseAuth.getInstance().getCurrentUser();
-        uid = user.getUid();
+        driverEmail = bundle.getString("driver");
 
         return v;
     }
@@ -149,7 +151,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             Log.e(TAG, "Can't find style. Error: ", e);
         }
 
-        drawPins();
+        //drawPins();
 
         //Initialize Google Play Services
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -167,7 +169,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
     public void drawPins() {
         final List<Marker> markers = new ArrayList<Marker>();
-
 
         ValueEventListener listener = new ValueEventListener() {
             @Override
@@ -188,7 +189,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(uid).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverEmail).addValueEventListener(listener);
     }
 
     public void removePins() {
@@ -200,7 +201,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
                     double longitude = (double) snapshot.child("longitude").getValue();
                     double distance = Math.sqrt((driverLat - latitude) * (driverLat - latitude) + (driverLon - longitude) * (driverLon - longitude));
                     if(distance < 5.0E-4) {
-                        mDriverPinsDatabaseReference.child(uid).child(snapshot.getKey() ).removeValue();
+                        mDriverPinsDatabaseReference.child(driverEmail).child(snapshot.getKey() ).removeValue();
                     }
                 }
             }
@@ -209,7 +210,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(uid).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverEmail).addValueEventListener(listener);
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -261,7 +262,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
             driverLat = location.getLatitude();
             driverLon = location.getLongitude();
-            removePins();
+//            removePins();
 
             databaseUpdate(driverLat, driverLon);
         }
@@ -335,9 +336,11 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT, loc);
         String time = timeFormat.format(new Date());
 
-        String timestamp = date + time;
-        DriverLocation info = new DriverLocation(lat, lon, timestamp);
-        mDriverLocationsDatabeReference.child(uid).setValue(info);
+        String timestamp = date +  " " + time;
+        DriverLocation driverInfo = new DriverLocation(lat, lon, timestamp);
+
+        String driverKey = driverEmail.substring(0, driverEmail.indexOf("@"));
+        mDriverLocationsDatabeReference.child(driverKey).setValue(driverInfo);
     }
 }
 
