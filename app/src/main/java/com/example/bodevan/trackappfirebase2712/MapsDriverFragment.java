@@ -74,6 +74,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
     private String username;
     private String uid;
     private String driverEmail;
+    private String driverName;
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
@@ -107,6 +108,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
         Bundle bundle = this.getArguments();
         driverEmail = bundle.getString("driver");
+        driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
+
 
         return v;
     }
@@ -151,7 +154,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             Log.e(TAG, "Can't find style. Error: ", e);
         }
 
-        //drawPins();
+        drawPins();
 
         //Initialize Google Play Services
         if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -189,7 +192,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(driverEmail).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
     }
 
     public void removePins() {
@@ -201,7 +204,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
                     double longitude = (double) snapshot.child("longitude").getValue();
                     double distance = Math.sqrt((driverLat - latitude) * (driverLat - latitude) + (driverLon - longitude) * (driverLon - longitude));
                     if(distance < 5.0E-4) {
-                        mDriverPinsDatabaseReference.child(driverEmail).child(snapshot.getKey() ).removeValue();
+                        mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey() ).removeValue();
                     }
                 }
             }
@@ -210,7 +213,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(driverEmail).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -262,7 +265,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
 
             driverLat = location.getLatitude();
             driverLon = location.getLongitude();
-//            removePins();
+            removePins();
 
             databaseUpdate(driverLat, driverLon);
         }
@@ -339,8 +342,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback,
         String timestamp = date +  " " + time;
         DriverLocation driverInfo = new DriverLocation(lat, lon, timestamp);
 
-        String driverKey = driverEmail.substring(0, driverEmail.indexOf("@"));
-        mDriverLocationsDatabeReference.child(driverKey).setValue(driverInfo);
+        mDriverLocationsDatabeReference.child(driverName).setValue(driverInfo);
     }
 }
 

@@ -4,6 +4,7 @@ import android.Manifest;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -15,6 +16,7 @@ import android.location.Location;
 import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.RequiresApi;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.Fragment;
 import android.os.Bundle;
@@ -45,6 +47,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -183,6 +186,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
                     markers.add(marker);
                 }
+                drawPrimaryLinePath(markers);
+
             }
 
             @Override
@@ -190,6 +195,12 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
             }
         };
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
+    }
+
+    private void drawPrimaryLinePath(List<Marker> listLocsToDraw )
+    {
+
+
     }
 
     protected synchronized void buildGoogleApiClient() {
@@ -235,17 +246,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
                 mMap.animateCamera(CameraUpdateFactory.zoomTo(12), 2000, null);
                 zoomed = true;
             }
-
-            myLat = location.getLatitude();
-            myLon = location.getLongitude();
-//            Toast.makeText(getActivity(), "Latitude = " +
-//                            location.getLatitude() + " " + "Longitude = " + location.getLongitude(),
-//                    Toast.LENGTH_LONG).show();
-//
-//            driverLat = location.getLatitude();
-//            driverLon = location.getLongitude();
-//
-//            databaseUpdate(driverLat, driverLon);
         }
     }
 
@@ -378,33 +378,49 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback,
         }
 
         if (firstTime) {
-            Toast.makeText(getActivity(), "My location:" + myLat + myLon, Toast.LENGTH_LONG).show();
             double distance = Math.sqrt((driverLat - myLat) * (driverLat - myLat) + (driverLon - myLon) * (driverLon - myLon));
             if (distance < 5.0E-4) {
                 sendNotification();
-
             }
         }
         firstTime = true;
-
     }
 
     private void sendNotification() {
-//        NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(getContext(), "M_CH_ID");
-//
-//        notificationBuilder.setAutoCancel(true)
-//                .setDefaults(Notification.DEFAULT_ALL)
-//                .setWhen(System.currentTimeMillis())
-//                .setTicker("Hearty365")
-//                .setPriority(Notification.PRIORITY_MAX) // this is deprecated in API 26 but you can still use for below 26. check below update for 26 API
-//                .setContentTitle("Водитель Прибыл!")
-//                .setContentText("Ваш Водитель Вас Ожидает.");
-//
-//        NotificationManager notificationManager = (NotificationManager) getContext().getSystemService(Context.NOTIFICATION_SERVICE);
-//        notificationManager.notify(1, notificationBuilder.build());
+        String channel_name = "CHANNEL_NAME";
+        String channel_description = "CHANNEL_DESCRIPTION";
+        String CHANNEL_ID = "CHANNEL_ID";
 
 
-        
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            CharSequence name = channel_name;
+            String description = channel_description;
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, name, importance);
+            channel.setDescription(description);
+            // Register the channel with the system; you can't change the importance
+            // or other notification behaviors after this
+            NotificationManager notificationManager = getActivity().getSystemService(NotificationManager.class);
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        Intent intent = new Intent(getActivity(), MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getActivity(), 0, intent, 0);
+
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(getActivity(), CHANNEL_ID)
+                .setSmallIcon(R.drawable.icon)
+                .setContentTitle("Водитель Прибыл")
+                .setContentText("Ваш Водитель Вас Ожидает")
+                .setWhen(System.currentTimeMillis())
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true)
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(Notification.DEFAULT_ALL);
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(getActivity());
+
+// notificationId is a unique int for each notification that you must define
+        notificationManager.notify(1, mBuilder.build());
+
     }
-
 }
