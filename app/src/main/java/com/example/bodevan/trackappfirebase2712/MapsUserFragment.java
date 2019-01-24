@@ -1,6 +1,7 @@
 package com.example.bodevan.trackappfirebase2712;
 
 import android.Manifest;
+import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -10,11 +11,14 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -25,33 +29,54 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.util.SortedList;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.Interpolator;
+import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.TransportMode;
+import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Info;
+import com.akexorcist.googledirection.model.Leg;
+import com.akexorcist.googledirection.model.Route;
+import com.akexorcist.googledirection.util.DirectionConverter;
+import com.google.android.gms.common.api.Response;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
+import com.google.android.gms.maps.model.SquareCap;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -76,12 +101,18 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     public String driverName;
     private boolean zoomed = false;
     private boolean firstTime = false;
+    private boolean isMarkerRotating = false;
+    private double angle;
 
     public double myLat;
     public double myLon;
 
-    final private int height = 500;
-    final private int width = 500;
+    private double prevLat;
+    private double prevLon;
+    private LatLng prevLoc;
+
+    final private int height = 240;
+    final private int width = 240;
 
     private TextView onlineTime;
     private ImageView zoom;
@@ -117,7 +148,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         driverEmail = bundle.getString("driver_for_user");
         driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
 
-        Toast.makeText(getActivity(), driverName, Toast.LENGTH_LONG).show();
 
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
@@ -228,41 +258,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         }
     };
 
-    public void drawPins() {
-        final List<Marker> markers = new ArrayList<Marker>();
-
-        ValueEventListener listener = new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (int i = 0; i < markers.size(); i++) {
-                    markers.get(i).remove();
-                }
-                markers.clear();
-
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    double latitude = (double) snapshot.child("latitude").getValue();
-                    double longitude = (double) snapshot.child("longitude").getValue();
-                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
-                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
-                    markers.add(marker);
-                }
-                drawPrimaryLinePath(markers);
-
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        };
-        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
-    }
-
-    private void drawPrimaryLinePath(List<Marker> listLocsToDraw )
-    {
-
-
-    }
-
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
 
     private void checkLocationPermission() {
@@ -369,11 +364,98 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     }
 
+    public void drawPins() {
+        final List<Marker> markers = new ArrayList<Marker>();
+
+        ValueEventListener listener = new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                int num = 1;
+                for (int i = 0; i < markers.size(); i++) {
+                    markers.get(i).remove();
+                }
+                markers.clear();
+
+                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                    double latitude = (double) snapshot.child("latitude").getValue();
+                    double longitude = (double) snapshot.child("longitude").getValue();
+                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+//                            .title(String.valueOf(num))
+                            .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
+                    if (num == 1) {
+//                        marker.setSnippet("Следующая точка");
+//                        marker.showInfoWindow();
+                    }
+                    markers.add(marker);
+                    num += 1;
+                }
+
+                drawPath(markers);
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        };
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
+    }
+
+    private void drawPath(List<Marker> markersToDraw) {
+        LatLng posit1;
+        LatLng posit2;
+        for (int i = 0; i < markersToDraw.size() - 1; i++) {
+            posit1 = markersToDraw.get(i).getPosition();
+            posit2 = markersToDraw.get(i + 1).getPosition();
+//            waypoints.add(posit);
+            drawPathBetweenTwoPoints(posit1, posit2);
+//            Marker markerTwo = markersToDraw.get(i + 1);
+        }
+
+    }
+
+    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo) {
+        GoogleDirection.withServerKey("AIzaSyD1ealwua5d0IHHlqcO-t05jnY2sWV4CiU")
+                .from(pointOne)
+                .to(pointTwo)
+                .transportMode(TransportMode.DRIVING)
+                .execute(new DirectionCallback() {
+                    @Override
+                    public void onDirectionSuccess(Direction direction, String rawBody) {
+                        if(direction.isOK()) {
+                            Toast.makeText(getActivity(), "NIC", Toast.LENGTH_LONG).show();
+                            Toast.makeText(getActivity(), rawBody, Toast.LENGTH_LONG).show();
+
+                            Route route = direction.getRouteList().get(0);
+                            Leg leg = route.getLegList().get(0);
+                            ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
+                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
+                            mMap.addPolyline(polylineOptions);
+                            Info durationInfo = leg.getDuration();
+                            String duration = durationInfo.getText();
+
+
+                        } else {
+                            // Do something
+                            Toast.makeText(getActivity(), "GG", Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onDirectionFailure(Throwable t) {
+                        // Do something
+                    }
+                });
+    }
+
     public void drawMarker(double driverLat, double driverLon) {
         if (currentLocationMarker != null) {
             currentLocationMarker.remove();
         }
-        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.car);
+//        if (prevLoc != null) {
+//            angle = bearingBetweenLocations(new LatLng(driverLat, driverLon), prevLoc);
+//
+//        }
+        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carr);
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
 
@@ -383,6 +465,9 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         currentLocationMarker = mMap.addMarker(new MarkerOptions().flat(true)
                 .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
                 .anchor(0.5f, 0.5f).position(currentLocation));
+//        if (prevLoc != null) {
+//            rotateMarker(currentLocationMarker, (float) angle);
+//        }
 
         // Move the camera instantly to hamburg with a zoom of 15.
 
@@ -410,7 +495,64 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             }
         }
         firstTime = true;
+
+        prevLat = driverLat;
+        prevLon = driverLon;
+        prevLoc = new LatLng(prevLat, prevLon);
     }
+
+//    private double bearingBetweenLocations(LatLng latLng1, LatLng latLng2) {
+//
+//        double PI = 3.14159;
+//        double lat1 = latLng1.latitude * PI / 180;
+//        double long1 = latLng1.longitude * PI / 180;
+//        double lat2 = latLng2.latitude * PI / 180;
+//        double long2 = latLng2.longitude * PI / 180;
+//
+//        double dLon = (long2 - long1);
+//
+//        double y = Math.sin(dLon) * Math.cos(lat2);
+//        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1)
+//                * Math.cos(lat2) * Math.cos(dLon);
+//
+//        double brng = Math.atan2(y, x);
+//
+//        brng = Math.toDegrees(brng);
+//        brng = (brng + 360) % 360;
+//
+//        return brng;
+//    }
+//
+//    private void rotateMarker(final Marker marker, final float toRotation) {
+//        if (!isMarkerRotating) {
+//            final Handler handler = new Handler();
+//            final long start = SystemClock.uptimeMillis();
+//            final float startRotation = marker.getRotation();
+//            final long duration = 1000;
+//
+//            final Interpolator interpolator = new LinearInterpolator();
+//
+//            handler.post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    isMarkerRotating = true;
+//
+//                    long elapsed = SystemClock.uptimeMillis() - start;
+//                    float t = interpolator.getInterpolation((float) elapsed / duration);
+//
+//                    float rot = t * toRotation + (1 - t) * startRotation;
+//
+//                    marker.setRotation(-rot > 180 ? rot / 2 : rot);
+//                    if (t < 1.0) {
+//                        // Post again 16ms later.
+//                        handler.postDelayed(this, 16);
+//                    } else {
+//                        isMarkerRotating = false;
+//                    }
+//                }
+//            });
+//        }
+//    }
 
     private void sendNotification() {
         String channel_name = "CHANNEL_NAME";
