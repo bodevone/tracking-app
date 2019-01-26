@@ -13,7 +13,6 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Looper;
@@ -143,7 +142,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         driverEmail = bundle.getString("driver_for_user");
         driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
 
-
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
         durationView = v.findViewById(R.id.duration);
@@ -242,10 +240,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                         mMap.animateCamera(CameraUpdateFactory.zoomTo(12), 2000, null);
                         zoomed = true;
                     }
-//
-//                    Toast.makeText(getActivity(), "Latitude = " +
-//                                    location.getLatitude() + " " + "Longitude = " + location.getLongitude(),
-//                            Toast.LENGTH_LONG).show();
 
                     myLat = location.getLatitude();
                     myLon = location.getLongitude();
@@ -420,9 +414,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
                         if (direction.isOK()) {
-//                            Toast.makeText(getActivity(), "NIC", Toast.LENGTH_LONG).show();
-//                            Toast.makeText(getActivity(), rawBody, Toast.LENGTH_LONG).show();
-
                             Route route = direction.getRouteList().get(0);
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();

@@ -33,7 +33,6 @@ import com.akexorcist.googledirection.model.Route;
 import com.akexorcist.googledirection.util.DirectionConverter;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
-import com.google.android.gms.location.LocationListener;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
@@ -41,7 +40,6 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
@@ -120,32 +118,32 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
         return v;
     }
-
-    @Override
-    public void onPause() {
-        super.onPause();
-        //stop location updates when Activity is no longer active
-//        if (mFusedLocationClient != null) {
-//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+//
+//    @Override
+//    public void onPause() {
+//        super.onPause();
+//        //stop location updates when Activity is no longer active
+////        if (mFusedLocationClient != null) {
+////            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+////        }
+//    }
+//
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            // TODO: Consider calling
+//            //    ActivityCompat#requestPermissions
+//            // here to request the missing permissions, and then overriding
+//            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+//            //                                          int[] grantResults)
+//            // to handle the case where the user grants the permission. See the documentation
+//            // for ActivityCompat#requestPermissions for more details.
+//            return;
 //        }
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-    }
+//        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+//    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -373,9 +371,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
                         if (direction.isOK()) {
-//                            Toast.makeText(getActivity(), "NIC", Toast.LENGTH_LONG).show();
-//                            Toast.makeText(getActivity(), rawBody, Toast.LENGTH_LONG).show();
-
                             Route route = direction.getRouteList().get(0);
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
