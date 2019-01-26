@@ -417,7 +417,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                             Route route = direction.getRouteList().get(0);
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
-                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
+                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.BLUE);
                             Polyline poly = mMap.addPolyline(polylineOptions);
                             polys.add(poly);
                             Info durationInfo = leg.getDuration();
