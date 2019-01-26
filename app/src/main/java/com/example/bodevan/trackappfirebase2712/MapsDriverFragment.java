@@ -149,6 +149,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap;
+        mMap.setTrafficEnabled(true);
+        mMap.getUiSettings().setZoomControlsEnabled(true);
 
         //Styling
         try {
@@ -374,7 +376,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                             Route route = direction.getRouteList().get(0);
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
-                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.BLUE);
+                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
                             Polyline poly = mMap.addPolyline(polylineOptions);
                             polys.add(poly);
                             Info durationInfo = leg.getDuration();
