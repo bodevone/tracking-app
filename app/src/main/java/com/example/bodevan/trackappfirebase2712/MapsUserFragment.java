@@ -60,12 +60,14 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.gms.maps.model.SquareCap;
 import com.google.firebase.database.DataSnapshot;
@@ -101,8 +103,9 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     public String driverName;
     private boolean zoomed = false;
     private boolean firstTime = false;
-    private boolean isMarkerRotating = false;
-    private double angle;
+    private boolean oneTime = false;
+
+    CameraPosition driver;
 
     public double myLat;
     public double myLon;
@@ -111,11 +114,13 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private double prevLon;
     private LatLng prevLoc;
 
-    final private int height = 240;
-    final private int width = 240;
+    final private int height = 180;
+    final private int width = 180;
+    private int total = 0;
 
     private TextView onlineTime;
     private ImageView zoom;
+    private TextView duration;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -151,6 +156,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
+        duration = v.findViewById(R.id.duration);
+
 
         updateDatabase();
 
@@ -246,10 +253,10 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                         mMap.animateCamera(CameraUpdateFactory.zoomTo(12), 2000, null);
                         zoomed = true;
                     }
-
-                    Toast.makeText(getActivity(), "Latitude = " +
-                                    location.getLatitude() + " " + "Longitude = " + location.getLongitude(),
-                            Toast.LENGTH_LONG).show();
+//
+//                    Toast.makeText(getActivity(), "Latitude = " +
+//                                    location.getLatitude() + " " + "Longitude = " + location.getLongitude(),
+//                            Toast.LENGTH_LONG).show();
 
                     myLat = location.getLatitude();
                     myLon = location.getLongitude();
@@ -380,11 +387,11 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
                     Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
-//                            .title(String.valueOf(num))
+                            .title(String.valueOf(num))
                             .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
                     if (num == 1) {
-//                        marker.setSnippet("Следующая точка");
-//                        marker.showInfoWindow();
+                        marker.setSnippet("Следующая точка");
+                        marker.showInfoWindow();
                     }
                     markers.add(marker);
                     num += 1;
@@ -403,17 +410,16 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private void drawPath(List<Marker> markersToDraw) {
         LatLng posit1;
         LatLng posit2;
+        total = 0;
         for (int i = 0; i < markersToDraw.size() - 1; i++) {
             posit1 = markersToDraw.get(i).getPosition();
             posit2 = markersToDraw.get(i + 1).getPosition();
-//            waypoints.add(posit);
-            drawPathBetweenTwoPoints(posit1, posit2);
-//            Marker markerTwo = markersToDraw.get(i + 1);
+            drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1));
         }
 
     }
 
-    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo) {
+    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two) {
         GoogleDirection.withServerKey("AIzaSyD1ealwua5d0IHHlqcO-t05jnY2sWV4CiU")
                 .from(pointOne)
                 .to(pointTwo)
@@ -421,9 +427,9 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                 .execute(new DirectionCallback() {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
-                        if(direction.isOK()) {
-                            Toast.makeText(getActivity(), "NIC", Toast.LENGTH_LONG).show();
-                            Toast.makeText(getActivity(), rawBody, Toast.LENGTH_LONG).show();
+                        if (direction.isOK()) {
+//                            Toast.makeText(getActivity(), "NIC", Toast.LENGTH_LONG).show();
+//                            Toast.makeText(getActivity(), rawBody, Toast.LENGTH_LONG).show();
 
                             Route route = direction.getRouteList().get(0);
                             Leg leg = route.getLegList().get(0);
@@ -432,11 +438,13 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                             mMap.addPolyline(polylineOptions);
                             Info durationInfo = leg.getDuration();
                             String duration = durationInfo.getText();
-
+                            two.setSnippet(duration);
+                            String dur = duration.substring(0, duration.indexOf(" "));
+                            total += Integer.parseInt(dur);
 
                         } else {
                             // Do something
-                            Toast.makeText(getActivity(), "GG", Toast.LENGTH_LONG).show();
+                            Toast.makeText(getActivity(), "Проблема в Прорисовывании пути", Toast.LENGTH_LONG).show();
                         }
                     }
 
@@ -455,7 +463,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 //            angle = bearingBetweenLocations(new LatLng(driverLat, driverLon), prevLoc);
 //
 //        }
-        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carr);
+        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carrr);
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
 
@@ -482,16 +490,30 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             zoom.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
-                    mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(latLng, 15));
-                    mMap.animateCamera(CameraUpdateFactory.zoomTo(14), 500, null);
+                    driver = new CameraPosition.Builder().target(latLng)
+                            .zoom(15.5f)
+                            .bearing(0)
+                            .build();
+                    mMap.animateCamera(CameraUpdateFactory.newCameraPosition(driver), Math.max(1000, 1), null);
+                    duration.setText("Путь займет " + String.valueOf(total) + " мин");
                 }
             });
         }
 
+        duration.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                duration.setText("Путь займет " + String.valueOf(total) + " мин");
+            }
+        });
+
         if (firstTime) {
             double distance = Math.sqrt((driverLat - myLat) * (driverLat - myLat) + (driverLon - myLon) * (driverLon - myLon));
             if (distance < 5.0E-4) {
-                sendNotification();
+                if (!oneTime) {
+                    sendNotification();
+                    oneTime = true;
+                }
             }
         }
         firstTime = true;
@@ -500,59 +522,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         prevLon = driverLon;
         prevLoc = new LatLng(prevLat, prevLon);
     }
-
-//    private double bearingBetweenLocations(LatLng latLng1, LatLng latLng2) {
-//
-//        double PI = 3.14159;
-//        double lat1 = latLng1.latitude * PI / 180;
-//        double long1 = latLng1.longitude * PI / 180;
-//        double lat2 = latLng2.latitude * PI / 180;
-//        double long2 = latLng2.longitude * PI / 180;
-//
-//        double dLon = (long2 - long1);
-//
-//        double y = Math.sin(dLon) * Math.cos(lat2);
-//        double x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1)
-//                * Math.cos(lat2) * Math.cos(dLon);
-//
-//        double brng = Math.atan2(y, x);
-//
-//        brng = Math.toDegrees(brng);
-//        brng = (brng + 360) % 360;
-//
-//        return brng;
-//    }
-//
-//    private void rotateMarker(final Marker marker, final float toRotation) {
-//        if (!isMarkerRotating) {
-//            final Handler handler = new Handler();
-//            final long start = SystemClock.uptimeMillis();
-//            final float startRotation = marker.getRotation();
-//            final long duration = 1000;
-//
-//            final Interpolator interpolator = new LinearInterpolator();
-//
-//            handler.post(new Runnable() {
-//                @Override
-//                public void run() {
-//                    isMarkerRotating = true;
-//
-//                    long elapsed = SystemClock.uptimeMillis() - start;
-//                    float t = interpolator.getInterpolation((float) elapsed / duration);
-//
-//                    float rot = t * toRotation + (1 - t) * startRotation;
-//
-//                    marker.setRotation(-rot > 180 ? rot / 2 : rot);
-//                    if (t < 1.0) {
-//                        // Post again 16ms later.
-//                        handler.postDelayed(this, 16);
-//                    } else {
-//                        isMarkerRotating = false;
-//                    }
-//                }
-//            });
-//        }
-//    }
 
     private void sendNotification() {
         String channel_name = "CHANNEL_NAME";

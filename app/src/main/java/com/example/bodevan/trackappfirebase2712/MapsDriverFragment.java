@@ -4,6 +4,7 @@ import android.Manifest;
 import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
+import android.graphics.Color;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
@@ -22,6 +23,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
+import com.akexorcist.googledirection.DirectionCallback;
+import com.akexorcist.googledirection.GoogleDirection;
+import com.akexorcist.googledirection.constant.TransportMode;
+import com.akexorcist.googledirection.model.Direction;
+import com.akexorcist.googledirection.model.Info;
+import com.akexorcist.googledirection.model.Leg;
+import com.akexorcist.googledirection.model.Route;
+import com.akexorcist.googledirection.util.DirectionConverter;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationListener;
@@ -37,6 +46,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
@@ -65,6 +75,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     public static double driverLon;
     private String driverEmail;
     private String driverName;
+    private int total = 0;
+
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
@@ -199,10 +211,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                         zoomed = true;
                     }
 
-                    Toast.makeText(getActivity(), "Latitude = " +
-                                    location.getLatitude() + " " + "Longitude = " + location.getLongitude(),
-                            Toast.LENGTH_LONG).show();
-
                     driverLat = location.getLatitude();
                     driverLon = location.getLongitude();
                     removePins();
@@ -306,6 +314,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                int num = 1;
                 for (int i = 0; i < markers.size(); i++) {
                     markers.get(i).remove();
                 }
@@ -313,9 +322,19 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                     double latitude = (double) snapshot.child("latitude").getValue();
                     double longitude = (double) snapshot.child("longitude").getValue();
-                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude)));
+                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+                            .title(String.valueOf(num)));
+                    if (num == 1) {
+                        marker.setSnippet("Следующая точка");
+                        marker.showInfoWindow();
+                    }
                     markers.add(marker);
+                    num += 1;
+
                 }
+
+                drawPath(markers);
+
             }
 
             @Override
@@ -324,6 +343,56 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         };
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
     }
+
+
+    private void drawPath(List<Marker> markersToDraw) {
+        LatLng posit1;
+        LatLng posit2;
+        total = 0;
+        for (int i = 0; i < markersToDraw.size() - 1; i++) {
+            posit1 = markersToDraw.get(i).getPosition();
+            posit2 = markersToDraw.get(i + 1).getPosition();
+            drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1));
+        }
+
+    }
+
+    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two) {
+        GoogleDirection.withServerKey("AIzaSyD1ealwua5d0IHHlqcO-t05jnY2sWV4CiU")
+                .from(pointOne)
+                .to(pointTwo)
+                .transportMode(TransportMode.DRIVING)
+                .execute(new DirectionCallback() {
+                    @Override
+                    public void onDirectionSuccess(Direction direction, String rawBody) {
+                        if (direction.isOK()) {
+//                            Toast.makeText(getActivity(), "NIC", Toast.LENGTH_LONG).show();
+//                            Toast.makeText(getActivity(), rawBody, Toast.LENGTH_LONG).show();
+
+                            Route route = direction.getRouteList().get(0);
+                            Leg leg = route.getLegList().get(0);
+                            ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
+                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
+                            mMap.addPolyline(polylineOptions);
+                            Info durationInfo = leg.getDuration();
+                            String duration = durationInfo.getText();
+                            two.setSnippet(duration);
+                            String dur = duration.substring(0, duration.indexOf(" "));
+                            total += Integer.parseInt(dur);
+
+                        } else {
+                            // Do something
+                            Toast.makeText(getActivity(), "Проблема в Прорисовывании пути", Toast.LENGTH_LONG).show();
+                        }
+                    }
+
+                    @Override
+                    public void onDirectionFailure(Throwable t) {
+                        // Do something
+                    }
+                });
+    }
+
 
     public void removePins() {
         ValueEventListener listener = new ValueEventListener() {
