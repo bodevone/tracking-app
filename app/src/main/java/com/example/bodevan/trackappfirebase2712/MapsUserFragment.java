@@ -1,7 +1,6 @@
 package com.example.bodevan.trackappfirebase2712;
 
 import android.Manifest;
-import android.animation.ValueAnimator;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,11 +13,10 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.location.Location;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
 import android.os.Looper;
-import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -29,13 +27,10 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
-import android.support.v7.util.SortedList;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.view.animation.Interpolator;
-import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,37 +43,28 @@ import com.akexorcist.googledirection.model.Info;
 import com.akexorcist.googledirection.model.Leg;
 import com.akexorcist.googledirection.model.Route;
 import com.akexorcist.googledirection.util.DirectionConverter;
-import com.google.android.gms.common.api.Response;
 import com.google.android.gms.location.FusedLocationProviderClient;
 import com.google.android.gms.location.LocationCallback;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
-import com.google.android.gms.maps.CameraUpdate;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
-import com.google.android.gms.maps.model.JointType;
 import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
-import com.google.android.gms.maps.model.SquareCap;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
-
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -116,11 +102,15 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
     final private int height = 180;
     final private int width = 180;
-    private int total = 0;
+
+    private List<Polyline> polys = new ArrayList<Polyline>();
+    private List<Marker> markers = new ArrayList<Marker>();
+
+    private int total;
 
     private TextView onlineTime;
     private ImageView zoom;
-    private TextView duration;
+    private TextView durationView;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -156,8 +146,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
-        duration = v.findViewById(R.id.duration);
-
+        durationView = v.findViewById(R.id.duration);
 
         updateDatabase();
 
@@ -372,8 +361,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void drawPins() {
-        final List<Marker> markers = new ArrayList<Marker>();
-
         ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -396,7 +383,12 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     markers.add(marker);
                     num += 1;
                 }
-
+                if (polys != null) {
+                    for (int i = 0; i < polys.size(); i++) {
+                        polys.get(i).remove();
+                    }
+                    polys.clear();
+                }
                 drawPath(markers);
             }
 
@@ -407,6 +399,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
     }
 
+
     private void drawPath(List<Marker> markersToDraw) {
         LatLng posit1;
         LatLng posit2;
@@ -416,7 +409,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             posit2 = markersToDraw.get(i + 1).getPosition();
             drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1));
         }
-
     }
 
     private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two) {
@@ -435,12 +427,14 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
                             PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
-                            mMap.addPolyline(polylineOptions);
+                            Polyline poly = mMap.addPolyline(polylineOptions);
+                            polys.add(poly);
                             Info durationInfo = leg.getDuration();
                             String duration = durationInfo.getText();
                             two.setSnippet(duration);
                             String dur = duration.substring(0, duration.indexOf(" "));
                             total += Integer.parseInt(dur);
+                            durationView.setText("Путь займет " + String.valueOf(total) + " мин");
 
                         } else {
                             // Do something
@@ -459,10 +453,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (currentLocationMarker != null) {
             currentLocationMarker.remove();
         }
-//        if (prevLoc != null) {
-//            angle = bearingBetweenLocations(new LatLng(driverLat, driverLon), prevLoc);
-//
-//        }
         BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carrr);
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
@@ -473,11 +463,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         currentLocationMarker = mMap.addMarker(new MarkerOptions().flat(true)
                 .icon(BitmapDescriptorFactory.fromBitmap(smallMarker))
                 .anchor(0.5f, 0.5f).position(currentLocation));
-//        if (prevLoc != null) {
-//            rotateMarker(currentLocationMarker, (float) angle);
-//        }
-
-        // Move the camera instantly to hamburg with a zoom of 15.
 
         // Zoom in, animating the camera.
         if (!zoomed) {
@@ -495,17 +480,9 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                             .bearing(0)
                             .build();
                     mMap.animateCamera(CameraUpdateFactory.newCameraPosition(driver), Math.max(1000, 1), null);
-                    duration.setText("Путь займет " + String.valueOf(total) + " мин");
                 }
             });
         }
-
-        duration.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                duration.setText("Путь займет " + String.valueOf(total) + " мин");
-            }
-        });
 
         if (firstTime) {
             double distance = Math.sqrt((driverLat - myLat) * (driverLat - myLat) + (driverLon - myLon) * (driverLon - myLon));

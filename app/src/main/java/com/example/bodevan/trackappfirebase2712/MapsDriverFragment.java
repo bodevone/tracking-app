@@ -46,6 +46,7 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MapStyleOptions;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.firebase.database.DataSnapshot;
 import com.google.firebase.database.DatabaseError;
@@ -75,7 +76,9 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     public static double driverLon;
     private String driverEmail;
     private String driverName;
-    private int total = 0;
+
+    private List<Polyline> polys = new ArrayList<Polyline>();
+    private List<Marker> markers = new ArrayList<Marker>();
 
 
     private FirebaseDatabase mFirebaseDatabase;
@@ -309,8 +312,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
 
     public void drawPins() {
-        final List<Marker> markers = new ArrayList<Marker>();
-
         ValueEventListener listener = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -333,6 +334,13 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
                 }
 
+                if (polys != null) {
+                    for (int i = 0; i < polys.size(); i++) {
+                        polys.get(i).remove();
+                    }
+                    polys.clear();
+                }
+
                 drawPath(markers);
 
             }
@@ -348,7 +356,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     private void drawPath(List<Marker> markersToDraw) {
         LatLng posit1;
         LatLng posit2;
-        total = 0;
         for (int i = 0; i < markersToDraw.size() - 1; i++) {
             posit1 = markersToDraw.get(i).getPosition();
             posit2 = markersToDraw.get(i + 1).getPosition();
@@ -373,13 +380,11 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
                             PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
-                            mMap.addPolyline(polylineOptions);
+                            Polyline poly = mMap.addPolyline(polylineOptions);
+                            polys.add(poly);
                             Info durationInfo = leg.getDuration();
                             String duration = durationInfo.getText();
                             two.setSnippet(duration);
-                            String dur = duration.substring(0, duration.indexOf(" "));
-                            total += Integer.parseInt(dur);
-
                         } else {
                             // Do something
                             Toast.makeText(getActivity(), "Проблема в Прорисовывании пути", Toast.LENGTH_LONG).show();
