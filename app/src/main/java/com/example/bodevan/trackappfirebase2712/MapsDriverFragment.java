@@ -339,17 +339,19 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                 }
                 markers.clear();
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    double latitude = (double) snapshot.child("latitude").getValue();
-                    double longitude = (double) snapshot.child("longitude").getValue();
-                    Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
-                            .title(String.valueOf(num)));
-                    if (num == 1) {
-                        marker.setSnippet("Следующая точка");
-                        marker.showInfoWindow();
-                    }
-                    markers.add(marker);
-                    num += 1;
+                    if (String.valueOf(snapshot.child("used").getValue()).equals("0")) {
+                        double latitude = (double) snapshot.child("latitude").getValue();
+                        double longitude = (double) snapshot.child("longitude").getValue();
+                        Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+                                .title(String.valueOf(num)));
+                        if (num == 1) {
+                            marker.setSnippet("Следующая точка");
+                            marker.showInfoWindow();
+                        }
+                        markers.add(marker);
+                        num += 1;
 
+                    }
                 }
 
                 if (polys != null) {
@@ -467,7 +469,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                     double longitude = (double) snapshot.child("longitude").getValue();
                     double distance = Math.sqrt((driverLat - latitude) * (driverLat - latitude) + (driverLon - longitude) * (driverLon - longitude));
                     if (distance < 5.0E-4) {
-                        mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey()).removeValue();
+                        mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey()).child("used").setValue(1);
+//                        mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey()).removeValue();
                     }
                 }
             }

@@ -118,6 +118,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private ImageView redStatus;
     private ImageView greenStatus;
 
+    private BitmapDrawable bitmapdraw;
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -154,6 +156,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         durationView = v.findViewById(R.id.duration);
         redStatus = v.findViewById(R.id.redStatus);
         greenStatus = v.findViewById(R.id.greenStatus);
+
+        bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carrr);
 
         return v;
     }
@@ -247,7 +251,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                 Location location = locationList.get(locationList.size() - 1);
 
                 if (location != null) {
-
 
                     //Place current location marker
                     LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
@@ -464,6 +467,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
                         if (direction.isOK()) {
+                            Log.v("HUI ", "" + direction.toString());
                             Route route = direction.getRouteList().get(0);
                             Leg leg = route.getLegList().get(0);
                             ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
@@ -499,7 +503,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (currentLocationMarker != null) {
             currentLocationMarker.remove();
         }
-        BitmapDrawable bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carrr);
         Bitmap b = bitmapdraw.getBitmap();
         Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
 
