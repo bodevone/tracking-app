@@ -26,6 +26,7 @@ import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.NotificationManagerCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
+import android.text.Html;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -65,7 +66,9 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static android.content.ContentValues.TAG;
@@ -76,6 +79,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     SupportMapFragment mapFrag;
     Marker currentLocationMarker;
     LatLng latLng;
+
+    private int lastTime = 0;
 
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
@@ -110,6 +115,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private TextView onlineTime;
     private ImageView zoom;
     private TextView durationView;
+    private ImageView redStatus;
+    private ImageView greenStatus;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -145,8 +152,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
         durationView = v.findViewById(R.id.duration);
-
-        updateDatabase();
+        redStatus = v.findViewById(R.id.redStatus);
+        greenStatus = v.findViewById(R.id.greenStatus);
 
         return v;
     }
@@ -174,13 +181,20 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+        mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mFusedLocationClient != null) {
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        }
     }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
-        mMap.setTrafficEnabled(true);
         mMap.getUiSettings().setZoomControlsEnabled(true);
 
         //Styling
@@ -197,6 +211,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         } catch (Resources.NotFoundException e) {
             Log.e(TAG, "Can't find style. Error: ", e);
         }
+
+        updateDatabase();
 
         mLocationRequest = new LocationRequest();
         mLocationRequest.setInterval(1000);
@@ -333,7 +349,11 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                             DriverLocation info = dataSnapshot.getValue(DriverLocation.class);
                             drawMarker(info.latitude, info.longitude);
-                            onlineTime.setText("Водитель был в сети: " + info.timestamp);
+                            lastOnline(info.timestamp);
+//                            onlineTime.setText("Водитель был в сети: " + info.timestamp);
+
+                            if (currentLocationMarker != null && markers.size() != 0)
+                                drawPathBetweenTwoPoints(currentLocationMarker.getPosition(), markers.get(0).getPosition(), markers.get(0), true);
                         }
 
                         @Override
@@ -352,8 +372,34 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
             }
         });
+    }
 
+    public void lastOnline(String time) {
+        String timeValue = time.substring(time.indexOf("г.") + 3, time.length() - 3);
+        String one = timeValue.substring(timeValue.indexOf(":") + 1);
+        String hours = timeValue.substring(0, timeValue.indexOf(":"));
+        String minutes = one.substring(0, one.indexOf(":"));
+        String seconds = one.substring(one.indexOf(":") + 1);
+        int secOne = Integer.valueOf(hours) * 3600 + Integer.valueOf(minutes) * 60 + Integer.valueOf(seconds);
 
+        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT);
+        String currentTime = timeFormat.format(new Date());
+        String two = currentTime.substring(currentTime.indexOf(":") + 1, currentTime.indexOf(" "));
+        String h = currentTime.substring(0, currentTime.indexOf(":"));
+        String m = two.substring(0, two.indexOf(":"));
+        String s = two.substring(two.indexOf(":") + 1);
+        int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
+
+        if (Math.abs(secOne - secTwo) < 15) {
+            onlineTime.setTextColor(Color.parseColor("#007f00"));
+            onlineTime.setText("ВОДИТЕЛЬ В ПУТИ!");
+//            greenStatus.setVisibility(View.VISIBLE);
+        } else {
+//            onlineTime.setTextColor(Color.parseColor("#FF0000"));
+            onlineTime.setText(Html.fromHtml("<font color=red>ВОДИТЕЛЬ НЕ В СЕТИ!</font><br><br>Был в сети " + time));
+//            onlineTime.setText("ВОДИТЕЛЬ НЕ В СЕТИ!" + "\nБыл в сети " + time);
+//            redStatus.setVisibility(View.VISIBLE);
+        }
     }
 
     public void drawPins() {
@@ -385,6 +431,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     }
                     polys.clear();
                 }
+
                 drawPath(markers);
             }
 
@@ -400,14 +447,15 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         LatLng posit1;
         LatLng posit2;
         total = 0;
+
         for (int i = 0; i < markersToDraw.size() - 1; i++) {
             posit1 = markersToDraw.get(i).getPosition();
             posit2 = markersToDraw.get(i + 1).getPosition();
-            drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1));
+            drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1), false);
         }
     }
 
-    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two) {
+    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two, final boolean firstPath) {
         GoogleDirection.withServerKey("AIzaSyD1ealwua5d0IHHlqcO-t05jnY2sWV4CiU")
                 .from(pointOne)
                 .to(pointTwo)
@@ -426,6 +474,11 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                             String duration = durationInfo.getText();
                             two.setSnippet(duration);
                             String dur = duration.substring(0, duration.indexOf(" "));
+                            if (firstPath) {
+                                Log.i("DURATION", String.valueOf(lastTime));
+                                total = total - lastTime;
+                                lastTime = Integer.parseInt(dur);
+                            }
                             total += Integer.parseInt(dur);
                             durationView.setText("Путь займет " + String.valueOf(total) + " мин");
 

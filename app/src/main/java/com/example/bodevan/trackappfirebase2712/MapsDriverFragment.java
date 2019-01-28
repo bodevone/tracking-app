@@ -21,6 +21,8 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.akexorcist.googledirection.DirectionCallback;
@@ -78,6 +80,10 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     private List<Polyline> polys = new ArrayList<Polyline>();
     private List<Marker> markers = new ArrayList<Marker>();
 
+    private TextView onlineStatus;
+    private ImageView redStatus;
+    private ImageView greenStatus;
+
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
@@ -111,6 +117,10 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
 
+        onlineStatus = v.findViewById(R.id.onlineStatus);
+        redStatus = v.findViewById(R.id.redStatus);
+        greenStatus = v.findViewById(R.id.greenStatus);
+
         Bundle bundle = this.getArguments();
         driverEmail = bundle.getString("driver");
         driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
@@ -118,14 +128,14 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
         return v;
     }
-//
+
 //    @Override
 //    public void onPause() {
 //        super.onPause();
 //        //stop location updates when Activity is no longer active
-////        if (mFusedLocationClient != null) {
-////            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-////        }
+//        if (mFusedLocationClient != null) {
+//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+//        }
 //    }
 //
 //    @Override
@@ -146,10 +156,17 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 //    }
 
     @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (mFusedLocationClient != null) {
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        }
+    }
+
+    @Override
     public void onMapReady(GoogleMap googleMap) {
 
         mMap = googleMap;
-        mMap.setTrafficEnabled(true);
         mMap.getUiSettings().setZoomControlsEnabled(true);
 
         //Styling
@@ -188,8 +205,9 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             mMap.setMyLocationEnabled(true);
         }
 
-
         drawPins();
+
+        compareTime();
     }
 
 
@@ -350,6 +368,50 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             }
         };
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
+    }
+
+    private void compareTime() {
+        final ValueEventListener listenTime = new ValueEventListener() {
+
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                if (dataSnapshot.child(driverName).exists()) {
+                    String time = (String) dataSnapshot.child(driverName).child("timestamp").getValue();
+                    String timeValue = time.substring(time.indexOf("г.") + 3, time.length() - 3);
+                    String one = timeValue.substring(timeValue.indexOf(":") + 1);
+                    String hours = timeValue.substring(0, timeValue.indexOf(":"));
+                    String minutes = one.substring(0, one.indexOf(":"));
+                    String seconds = one.substring(one.indexOf(":") + 1);
+                    int secOne = Integer.valueOf(hours) * 3600 + Integer.valueOf(minutes) * 60 + Integer.valueOf(seconds);
+
+                    DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT);
+                    String currentTime = timeFormat.format(new Date());
+                    String two = currentTime.substring(currentTime.indexOf(":") + 1, currentTime.indexOf(" "));
+                    String h = currentTime.substring(0, currentTime.indexOf(":"));
+                    String m = two.substring(0, two.indexOf(":"));
+                    String s = two.substring(two.indexOf(":") + 1);
+                    int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
+
+                    if (Math.abs(secOne - secTwo) < 15) {
+                        onlineStatus.setText("ВЫ В СЕТИ!");
+                        redStatus.setVisibility(View.GONE);
+                        greenStatus.setVisibility(View.VISIBLE);
+                    } else {
+                        onlineStatus.setText("ВЫ НЕ В СЕТИ!");
+                        greenStatus.setVisibility(View.GONE);
+                        redStatus.setVisibility(View.VISIBLE);
+                    }
+                } else {
+                    onlineStatus.setText("ВЫ ЕЩЕ НЕ ВКЛЮЧИЛИ GPS!");
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+
+            }
+        };
+        mDriverLocationsDatabeReference.addValueEventListener(listenTime);
     }
 
 
