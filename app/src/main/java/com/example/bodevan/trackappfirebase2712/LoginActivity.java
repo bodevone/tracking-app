@@ -39,6 +39,7 @@ public class LoginActivity extends AppCompatActivity {
     private EditText usernameText;
     private EditText passwordText;
     private ProgressBar progressBar;
+    private ProgressBar progressBarInit;
     private RelativeLayout background;
 
     private FirebaseAuth mAuth;
@@ -62,6 +63,7 @@ public class LoginActivity extends AppCompatActivity {
         usernameText = findViewById(R.id.input_username);
         passwordText = findViewById(R.id.input_password);
         progressBar = findViewById(R.id.progressBar);
+        progressBarInit = findViewById(R.id.progressBarInit);
         background = findViewById(R.id.relLayout);
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
@@ -72,7 +74,7 @@ public class LoginActivity extends AppCompatActivity {
         mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
             background.setVisibility(View.GONE);
-            progressBar.setVisibility(View.VISIBLE);
+            progressBarInit.setVisibility(View.VISIBLE);
             currentEmail = mAuth.getCurrentUser().getEmail();
             findRoleFromDatabase(currentEmail);
         }

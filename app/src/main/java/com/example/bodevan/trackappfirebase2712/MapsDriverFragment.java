@@ -89,6 +89,10 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     private DatabaseReference mDriverLocationsDatabeReference;
     private DatabaseReference mDriverPinsDatabaseReference;
 
+    private ValueEventListener listenerPins;
+    private ValueEventListener listenTime;
+    private ValueEventListener listenerDelete;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -163,7 +167,10 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         if (mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
-        FirebaseDatabase.getInstance().goOffline();
+        mDriverPinsDatabaseReference.removeEventListener(listenerPins);
+        mDriverLocationsDatabeReference.removeEventListener(listenTime);
+        mDriverPinsDatabaseReference.removeEventListener(listenerDelete);
+
     }
 
     @Override
@@ -333,7 +340,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
 
     public void drawPins() {
-        ValueEventListener listener = new ValueEventListener() {
+        listenerPins = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 int num = 1;
@@ -372,11 +379,11 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
     }
 
     private void compareTime() {
-        final ValueEventListener listenTime = new ValueEventListener() {
+        listenTime = new ValueEventListener() {
 
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
@@ -464,7 +471,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
 
     public void removePins() {
-        ValueEventListener listener = new ValueEventListener() {
+        listenerDelete = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
@@ -482,7 +489,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerDelete);
     }
 }
 
