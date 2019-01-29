@@ -29,7 +29,7 @@ import java.util.Map;
 public class FeedbackFragment extends Fragment {
 
     private EditText userName;
-    private EditText feedback;
+    private EditText feedBack;
     private Button send;
 
     private FirebaseDatabase mFirebaseDatabase;
@@ -54,7 +54,7 @@ public class FeedbackFragment extends Fragment {
 
 
         userName = v.findViewById(R.id.name);
-        feedback = v.findViewById(R.id.feedback);
+        feedBack = v.findViewById(R.id.feedback);
 
         //Text colors
         TextView nameView = v.findViewById(R.id.name_color);
@@ -72,7 +72,7 @@ public class FeedbackFragment extends Fragment {
             @Override
             public void onClick(View v) {
                 String nameUser = userName.getText().toString();
-                String feedbackUser = feedback.getText().toString();
+                String feedbackUser = feedBack.getText().toString();
 
                 if (TextUtils.isEmpty(nameUser)) {
                     Toast.makeText(getActivity(), "Введите Ваше Имя!", Toast.LENGTH_SHORT).show();
@@ -108,9 +108,10 @@ public class FeedbackFragment extends Fragment {
 
         mFeedbackReferenceDatabase.push().setValue(feedbackMap);
 
+        userName.getText().clear();
+        feedBack.getText().clear();
+
         Toast.makeText(getActivity(), "Отзыв отправлен", Toast.LENGTH_LONG).show();
 
     }
-
-
 }
