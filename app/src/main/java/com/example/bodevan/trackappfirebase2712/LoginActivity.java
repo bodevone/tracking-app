@@ -13,6 +13,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnCompleteListener;
@@ -38,8 +39,15 @@ public class LoginActivity extends AppCompatActivity {
     private EditText usernameText;
     private EditText passwordText;
     private ProgressBar progressBar;
+    private RelativeLayout background;
 
     private FirebaseAuth mAuth;
+    private FirebaseDatabase mFirebaseDatabase;
+    private DatabaseReference mDriversDatabaseReference;
+    private DatabaseReference mUsersDatabaseReference;
+
+    private String currentEmail;
+    private String driverForUserEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,17 +62,25 @@ public class LoginActivity extends AppCompatActivity {
         usernameText = findViewById(R.id.input_username);
         passwordText = findViewById(R.id.input_password);
         progressBar = findViewById(R.id.progressBar);
+        background = findViewById(R.id.relLayout);
+
+        mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mFirebaseDatabase.goOnline();
+        mDriversDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("drivers");
+        mUsersDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("users");
 
         mAuth = FirebaseAuth.getInstance();
         if (mAuth.getCurrentUser() != null) {
-            startActivity(new Intent(LoginActivity.this, MainActivity.class));
-            finish();
+            background.setVisibility(View.GONE);
+            progressBar.setVisibility(View.VISIBLE);
+            currentEmail = mAuth.getCurrentUser().getEmail();
+            findRoleFromDatabase(currentEmail);
         }
 
         lgn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                String email = usernameText.getText().toString();
+                final String email = usernameText.getText().toString();
                 final String password = passwordText.getText().toString();
 
                 if (TextUtils.isEmpty(email)) {
@@ -84,21 +100,69 @@ public class LoginActivity extends AppCompatActivity {
                         .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
                             @Override
                             public void onComplete(@NonNull Task<AuthResult> task) {
-                                // If sign in fails, display a message to the user. If sign in succeeds
-                                // the auth state l istener will be notified and logic to handle the
-                                // signed in user can be handled in the listener.
-                                progressBar.setVisibility(View.GONE);
                                 if (!task.isSuccessful()) {
-                                    // there was an error
                                     Toast.makeText(getApplicationContext(), "Пользователь не найден", Toast.LENGTH_SHORT).show();
+                                    progressBar.setVisibility(View.GONE);
                                 } else {
-                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                    startActivity(intent);
-                                    finish();
+                                    findRoleFromDatabase(email);
                                 }
                             }
                         });
             }
         });
+    }
+
+    private void findRoleFromDatabase(final String email) {
+        mFirebaseDatabase.goOnline();
+        //Checking if your email in a list of drivers
+        mDriversDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
+                    String value = String.valueOf(childSnapshot.child("driver").getValue());
+
+                    if (value.equals(email)) {
+                        enterDriverActivity();
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        });
+
+        //Checking if your username in a list of users
+        mUsersDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
+            @Override
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
+                    String value = String.valueOf(childSnapshot.child("user").getValue());
+                    if (value.equals(email)) {
+                        driverForUserEmail = String.valueOf(childSnapshot.child("driver").getValue());
+                        enterUserActivity(driverForUserEmail);
+                    }
+                }
+            }
+
+            @Override
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
+        });
+    }
+
+    public void enterDriverActivity() {
+        Intent intent = new Intent(LoginActivity.this, DriverActivity.class);
+        progressBar.setVisibility(View.GONE);
+        startActivity(intent);
+        finish();
+    }
+
+    public void enterUserActivity(String driverEmail) {
+        Intent intent = new Intent(LoginActivity.this, UserActivity.class);
+        intent.putExtra("email", driverEmail);
+        progressBar.setVisibility(View.GONE);
+        startActivity(intent);
+        finish();
     }
 }

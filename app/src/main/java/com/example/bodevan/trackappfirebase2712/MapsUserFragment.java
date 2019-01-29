@@ -80,8 +80,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     Marker currentLocationMarker;
     LatLng latLng;
 
-    private int lastTime = 0;
-
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
 
@@ -119,6 +117,11 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private ImageView greenStatus;
 
     private BitmapDrawable bitmapdraw;
+    private Bitmap b;
+    private Bitmap smallMarker;
+
+    private ValueEventListener listenerLocations;
+    private ValueEventListener listenerPins;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -144,6 +147,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mFirebaseDatabase.goOnline();
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
 
@@ -158,6 +162,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         greenStatus = v.findViewById(R.id.greenStatus);
 
         bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carrr);
+        b = bitmapdraw.getBitmap();
+        smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
 
         return v;
     }
@@ -194,6 +200,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
+        mDriverLocationsDatabeReference.removeEventListener(listenerLocations);
+        mDriverPinsDatabaseReference.removeEventListener(listenerPins);
     }
 
     @Override
@@ -203,12 +211,9 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
         //Styling
         try {
-            // Customise the styling of the base map using a JSON object defined
-            // in a raw resource file.
             boolean success = googleMap.setMapStyle(
                     MapStyleOptions.loadRawResourceStyle(
                             getActivity(), R.raw.mapstyle));
-
             if (!success) {
                 Log.e(TAG, "Style parsing failed.");
             }
@@ -296,8 +301,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                         })
                         .create()
                         .show();
-
-
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(getActivity(),
@@ -334,7 +337,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                 }
                 return;
             }
-
             // other 'case' lines to check for other
             // permissions this app might request
         }
@@ -342,31 +344,17 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
 
     private void updateDatabase() {
-        mDriverLocationsDatabeReference.addValueEventListener(new ValueEventListener() {
+        listenerLocations = new ValueEventListener() {
             @Override
-            public void onDataChange(@NonNull DataSnapshot snapshot) {
-                if (snapshot.hasChild(driverName)) {
-
-                    ValueEventListener listener = new ValueEventListener() {
-                        @Override
-                        public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                            DriverLocation info = dataSnapshot.getValue(DriverLocation.class);
-                            drawMarker(info.latitude, info.longitude);
-                            lastOnline(info.timestamp);
-//                            onlineTime.setText("Водитель был в сети: " + info.timestamp);
-
-                            if (currentLocationMarker != null && markers.size() != 0)
-                                drawPathBetweenTwoPoints(currentLocationMarker.getPosition(), markers.get(0).getPosition(), markers.get(0), true);
-                        }
-
-                        @Override
-                        public void onCancelled(@NonNull DatabaseError databaseError) {
-                        }
-                    };
-                    mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listener);
-
-                } else {
-                    onlineTime.setText("Водитель еще не заходил");
+            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                for (DataSnapshot snap : dataSnapshot.getChildren()) {
+                    if (snap.getKey().equals(driverName)) {
+                        DriverLocation info = dataSnapshot.child(driverName).getValue(DriverLocation.class);
+                        drawMarker(info.latitude, info.longitude);
+                        lastOnline(info.timestamp);
+                    } else {
+                        onlineTime.setText("Водитель еще не заходил");
+                    }
                 }
             }
 
@@ -374,7 +362,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             public void onCancelled(@NonNull DatabaseError databaseError) {
 
             }
-        });
+        };
+        mDriverLocationsDatabeReference.addValueEventListener(listenerLocations);
     }
 
     public void lastOnline(String time) {
@@ -393,20 +382,16 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         String s = two.substring(two.indexOf(":") + 1);
         int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
 
-        if (Math.abs(secOne - secTwo) < 15) {
+        if (Math.abs(secOne - secTwo) < 20) {
             onlineTime.setTextColor(Color.parseColor("#007f00"));
-            onlineTime.setText("ВОДИТЕЛЬ В ПУТИ!");
-//            greenStatus.setVisibility(View.VISIBLE);
+            onlineTime.setText("ВОДИТЕЛЬ В ПУТИ");
         } else {
-//            onlineTime.setTextColor(Color.parseColor("#FF0000"));
-            onlineTime.setText(Html.fromHtml("<font color=red>ВОДИТЕЛЬ НЕ В СЕТИ!</font><br><br>Был в сети " + time));
-//            onlineTime.setText("ВОДИТЕЛЬ НЕ В СЕТИ!" + "\nБыл в сети " + time);
-//            redStatus.setVisibility(View.VISIBLE);
+            onlineTime.setText(Html.fromHtml("<font color=red>ВОДИТЕЛЬ НЕ В СЕТИ</font><br>Был в сети " + time));
         }
     }
 
     public void drawPins() {
-        ValueEventListener listener = new ValueEventListener() {
+        listenerPins = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
                 int num = 1;
@@ -442,9 +427,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             public void onCancelled(@NonNull DatabaseError databaseError) {
             }
         };
-        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listener);
+        mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
     }
-
 
     private void drawPath(List<Marker> markersToDraw) {
         LatLng posit1;
@@ -454,11 +438,15 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         for (int i = 0; i < markersToDraw.size() - 1; i++) {
             posit1 = markersToDraw.get(i).getPosition();
             posit2 = markersToDraw.get(i + 1).getPosition();
-            drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1), false);
+            drawPathBetweenTwoPoints(posit1, posit2, markersToDraw.get(i + 1));
         }
+
+        if (markersToDraw.size() == 0)
+            durationView.setText("Маршрута Нет");
+
     }
 
-    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two, final boolean firstPath) {
+    private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two) {
         GoogleDirection.withServerKey("AIzaSyD1ealwua5d0IHHlqcO-t05jnY2sWV4CiU")
                 .from(pointOne)
                 .to(pointTwo)
@@ -467,34 +455,31 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     @Override
                     public void onDirectionSuccess(Direction direction, String rawBody) {
                         if (direction.isOK()) {
-                            Log.v("HUI ", "" + direction.toString());
-                            Route route = direction.getRouteList().get(0);
-                            Leg leg = route.getLegList().get(0);
-                            ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
-                            PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
-                            Polyline poly = mMap.addPolyline(polylineOptions);
-                            polys.add(poly);
-                            Info durationInfo = leg.getDuration();
-                            String duration = durationInfo.getText();
-                            two.setSnippet(duration);
-                            String dur = duration.substring(0, duration.indexOf(" "));
-                            if (firstPath) {
-                                Log.i("DURATION", String.valueOf(lastTime));
-                                total = total - lastTime;
-                                lastTime = Integer.parseInt(dur);
+                            if (direction != null) {
+                                Route route = direction.getRouteList().get(0);
+                                Leg leg = route.getLegList().get(0);
+                                ArrayList<LatLng> directionPositionList = leg.getDirectionPoint();
+                                PolylineOptions polylineOptions = DirectionConverter.createPolyline(getActivity(), directionPositionList, 5, Color.RED);
+                                Polyline poly = mMap.addPolyline(polylineOptions);
+                                polys.add(poly);
+                                Info durationInfo = leg.getDuration();
+                                String duration = durationInfo.getText();
+                                two.setSnippet(duration);
+                                String dur = duration.substring(0, duration.indexOf(" "));
+                                total += Integer.parseInt(dur);
+                                durationView.setText("Маршрут займет " + String.valueOf(total) + " мин");
+
                             }
-                            total += Integer.parseInt(dur);
-                            durationView.setText("Путь займет " + String.valueOf(total) + " мин");
 
                         } else {
-                            // Do something
-                            Toast.makeText(getActivity(), "Проблема в Прорисовывании пути", Toast.LENGTH_LONG).show();
+                            Toast.makeText(getActivity(), "Проблема в uu Маршрута", Toast.LENGTH_LONG).show();
+                            Log.i("ISSUE", rawBody);
                         }
                     }
 
                     @Override
                     public void onDirectionFailure(Throwable t) {
-                        // Do something
+                        Toast.makeText(getActivity(), "Проблема в Прорисовывании Маршрута", Toast.LENGTH_LONG).show();
                     }
                 });
     }
@@ -503,8 +488,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (currentLocationMarker != null) {
             currentLocationMarker.remove();
         }
-        Bitmap b = bitmapdraw.getBitmap();
-        Bitmap smallMarker = Bitmap.createScaledBitmap(b, width, height, false);
 
         LatLng currentLocation = new LatLng(driverLat, driverLon);
         latLng = new LatLng(driverLat, driverLon);
@@ -567,7 +550,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             notificationManager.createNotificationChannel(channel);
         }
 
-        Intent intent = new Intent(getActivity(), MainActivity.class);
+        Intent intent = new Intent(getContext(), UserActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         PendingIntent pendingIntent = PendingIntent.getActivity(getActivity(), 0, intent, 0);
 

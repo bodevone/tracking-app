@@ -114,8 +114,10 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
+        mFirebaseDatabase.goOnline();
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
+
 
         onlineStatus = v.findViewById(R.id.onlineStatus);
         redStatus = v.findViewById(R.id.redStatus);
@@ -161,6 +163,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         if (mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
+        FirebaseDatabase.getInstance().goOffline();
     }
 
     @Override

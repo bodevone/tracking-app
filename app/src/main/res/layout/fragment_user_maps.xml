@@ -22,7 +22,7 @@
         android:background="@drawable/rounded_corner"
         android:gravity="center"
         android:padding="7dp"
-        android:text="Путь займет "
+        android:text="Маршрута Нет "
         android:textSize="15dp" />
 
     <LinearLayout

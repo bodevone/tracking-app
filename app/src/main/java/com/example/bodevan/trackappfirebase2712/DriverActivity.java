@@ -24,79 +24,27 @@ import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class DriverActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     private DrawerLayout drawer;
     ImageView header;
     NavigationView navigationView;
-    private String driverForUserEmail;
     private FirebaseAuth mAuth;
     private FirebaseUser user;
 
-    private String uid;
     private String email;
-
-    private String stateRole;
-
-    private FirebaseDatabase mFirebaseDatabase;
-    private DatabaseReference mDriversDatabaseReference;
-    private DatabaseReference mUsersDatabaseReference;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_driver);
 
         mAuth = FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
 
         if (user != null) {
-            uid = user.getUid();
             email = user.getEmail();
         }
-
-
-        mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mDriversDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("drivers");
-        mUsersDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("users");
-
-        //Checking if your email in a list of drivers
-        mDriversDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
-                    String value = String.valueOf(childSnapshot.child("driver").getValue());
-
-                    if (value.equals(email)) {
-                        stateRole = "driver";
-                        enterDriverMap();
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        });
-
-        //Checking if your username in a list of users
-        mUsersDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
-            @Override
-            public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot childSnapshot : dataSnapshot.getChildren()) {
-                    String value = String.valueOf(childSnapshot.child("user").getValue());
-                    if (value.equals(email)) {
-                        driverForUserEmail = String.valueOf(childSnapshot.child("driver").getValue());
-                        stateRole = "user";
-                        enterUserMap();
-                    }
-                }
-            }
-
-            @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
-        });
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         toolbar.setBackgroundColor(Color.parseColor("#FDBE38"));
@@ -111,13 +59,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         toggle.getDrawerArrowDrawable().setColor(getResources().getColor(R.color.text_color));
         drawer.addDrawerListener(toggle);
         toggle.syncState();
+
+        enterDriverMap();
     }
 
     @Override
     public boolean onNavigationItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.nav_map:
-                decideMap();
+                enterDriverMap();
                 break;
             case R.id.nav_feedback:
                 getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
@@ -129,7 +79,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
                 break;
             case R.id.nav_logout:
                 mAuth.signOut();
-                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                Intent intent = new Intent(DriverActivity.this, LoginActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
                 startActivity(intent);
                 finish();
         }
@@ -139,7 +90,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         header.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                decideMap();
+                enterDriverMap();
                 drawer.closeDrawer(GravityCompat.START);
             }
         });
@@ -156,9 +107,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         } else {
             FragmentManager manager = getSupportFragmentManager();
             if (manager.findFragmentById(R.id.fragment_container) instanceof FeedbackFragment) {
-                decideMap();
+                enterDriverMap();
             } else if (manager.findFragmentById(R.id.fragment_container) instanceof InfoFragment) {
-                decideMap();
+                enterDriverMap();
             } else {
                 super.onBackPressed();
             }
@@ -174,23 +125,5 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
                 fragDriver).commit();
         navigationView.setCheckedItem(R.id.nav_map);
-    }
-
-    public void enterUserMap() {
-        Bundle bundle = new Bundle();
-        bundle.putString("driver_for_user", driverForUserEmail);
-        MapsUserFragment fragUser = new MapsUserFragment();
-        fragUser.setArguments(bundle);
-        getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,
-                fragUser).commit();
-        navigationView.setCheckedItem(R.id.nav_map);
-    }
-
-    public void decideMap() {
-        if (stateRole.equals("driver")) {
-            enterDriverMap();
-        } else if (stateRole.equals("user")) {
-            enterUserMap();
-        }
     }
 }
