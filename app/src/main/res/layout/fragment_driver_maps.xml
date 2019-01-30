@@ -51,7 +51,7 @@
             android:background="@drawable/rounded_corner"
             android:gravity="center"
             android:padding="7dp"
-            android:text="ВЫ НЕ В СЕТИ!"
+            android:text="Расчет..."
             android:textSize="15dp"
             android:textStyle="bold" />
 

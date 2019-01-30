@@ -74,7 +74,7 @@
             android:background="@drawable/rounded_corner"
             android:gravity="center"
             android:padding="10dp"
-            android:text="Был в сети"
+            android:text="Расчет..."
             android:textSize="15dp" />
 
     </LinearLayout>

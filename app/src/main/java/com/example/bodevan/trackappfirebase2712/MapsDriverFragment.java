@@ -8,6 +8,7 @@ import android.graphics.Color;
 import android.location.Location;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -65,7 +66,7 @@ import static android.content.ContentValues.TAG;
 public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
     private GoogleMap mMap;
-    SupportMapFragment mapFrag;
+    private SupportMapFragment mapFrag;
 
     private FusedLocationProviderClient mFusedLocationClient;
     private LocationRequest mLocationRequest;
@@ -84,6 +85,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     private ImageView redStatus;
     private ImageView greenStatus;
 
+    private String timeOnline;
+
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mDriverLocationsDatabeReference;
@@ -92,7 +95,9 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     private ValueEventListener listenerPins;
     private ValueEventListener listenTime;
     private ValueEventListener listenerDelete;
-
+    private Handler hand;
+    private Runnable run;
+    private boolean wasInHand = false;
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -131,22 +136,26 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         driverEmail = bundle.getString("driver");
         driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
 
+        findTime();
 
         return v;
     }
 
-//    @Override
-//    public void onPause() {
-//        super.onPause();
-//        //stop location updates when Activity is no longer active
+
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        //stop location updates when Activity is no longer active
 //        if (mFusedLocationClient != null) {
 //            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
 //        }
-//    }
-//
-//    @Override
-//    public void onResume() {
-//        super.onResume();
+        hand.removeCallbacks(run);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
 //        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
 //                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
 //            // TODO: Consider calling
@@ -159,19 +168,46 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 //            return;
 //        }
 //        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-//    }
+        if (wasInHand) {
+            hand.postDelayed(run, 5000);
+        }
+    }
+
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
+    public void onDestroyView() {
+        super.onDestroyView();
         if (mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
-        mDriverPinsDatabaseReference.removeEventListener(listenerPins);
-        mDriverLocationsDatabeReference.removeEventListener(listenTime);
-        mDriverPinsDatabaseReference.removeEventListener(listenerDelete);
-
+        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
+        mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenTime);
+        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerDelete);
+        hand.removeCallbacks(run);
     }
+
+//    @Override
+//    public void onDestroy() {
+//        super.onDestroy();
+//        if (mFusedLocationClient != null) {
+//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+//        }
+//        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
+//        mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenTime);
+//        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerDelete);
+//    }
+
+//    @Override
+//    public void onStop() {
+//        super.onStop();
+//        if (mFusedLocationClient != null) {
+//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+//        }
+//        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
+//        mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenTime);
+//        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerDelete);
+//        hand.removeCallbacks(run);
+//    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -343,36 +379,39 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         listenerPins = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                int num = 1;
-                for (int i = 0; i < markers.size(); i++) {
-                    markers.get(i).remove();
-                }
-                markers.clear();
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    if (String.valueOf(snapshot.child("used").getValue()).equals("0")) {
-                        double latitude = (double) snapshot.child("latitude").getValue();
-                        double longitude = (double) snapshot.child("longitude").getValue();
-                        Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
-                                .title(String.valueOf(num)));
-                        if (num == 1) {
-                            marker.setSnippet("Следующая точка");
-                            marker.showInfoWindow();
+                if (dataSnapshot.exists()) {
+                    int num = 1;
+                    if (markers != null) {
+                        for (int i = 0; i < markers.size(); i++) {
+                            markers.get(i).remove();
                         }
-                        markers.add(marker);
-                        num += 1;
-
+                        markers.clear();
                     }
-                }
 
-                if (polys != null) {
-                    for (int i = 0; i < polys.size(); i++) {
-                        polys.get(i).remove();
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        if (String.valueOf(snapshot.child("used").getValue()).equals("0")) {
+                            double latitude = (double) snapshot.child("latitude").getValue();
+                            double longitude = (double) snapshot.child("longitude").getValue();
+                            Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+                                    .title(String.valueOf(num)));
+                            if (num == 1) {
+                                marker.setSnippet("Следующая точка");
+                                marker.showInfoWindow();
+                            }
+                            markers.add(marker);
+                            num += 1;
+
+                        }
                     }
-                    polys.clear();
+
+                    if (polys != null) {
+                        for (int i = 0; i < polys.size(); i++) {
+                            polys.get(i).remove();
+                        }
+                        polys.clear();
+                    }
+                    drawPath(markers);
                 }
-
-                drawPath(markers);
-
             }
 
             @Override
@@ -382,37 +421,12 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
     }
 
-    private void compareTime() {
+    public void findTime() {
         listenTime = new ValueEventListener() {
-
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                if (dataSnapshot.child(driverName).exists()) {
-                    String time = (String) dataSnapshot.child(driverName).child("timestamp").getValue();
-                    String timeValue = time.substring(time.indexOf("г.") + 3, time.length() - 3);
-                    String one = timeValue.substring(timeValue.indexOf(":") + 1);
-                    String hours = timeValue.substring(0, timeValue.indexOf(":"));
-                    String minutes = one.substring(0, one.indexOf(":"));
-                    String seconds = one.substring(one.indexOf(":") + 1);
-                    int secOne = Integer.valueOf(hours) * 3600 + Integer.valueOf(minutes) * 60 + Integer.valueOf(seconds);
-
-                    DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT);
-                    String currentTime = timeFormat.format(new Date());
-                    String two = currentTime.substring(currentTime.indexOf(":") + 1, currentTime.indexOf(" "));
-                    String h = currentTime.substring(0, currentTime.indexOf(":"));
-                    String m = two.substring(0, two.indexOf(":"));
-                    String s = two.substring(two.indexOf(":") + 1);
-                    int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
-
-                    if (Math.abs(secOne - secTwo) < 15) {
-                        onlineStatus.setText("ВЫ В СЕТИ!");
-                        redStatus.setVisibility(View.GONE);
-                        greenStatus.setVisibility(View.VISIBLE);
-                    } else {
-                        onlineStatus.setText("ВЫ НЕ В СЕТИ!");
-                        greenStatus.setVisibility(View.GONE);
-                        redStatus.setVisibility(View.VISIBLE);
-                    }
+                if (dataSnapshot.exists()) {
+                    timeOnline = (String) dataSnapshot.child("timestamp").getValue();
                 } else {
                     onlineStatus.setText("ВЫ ЕЩЕ НЕ ВКЛЮЧИЛИ GPS!");
                 }
@@ -423,7 +437,49 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
             }
         };
-        mDriverLocationsDatabeReference.addValueEventListener(listenTime);
+        mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenTime);
+    }
+
+    private void compareTime() {
+        hand = new Handler();
+        run = new Runnable() {
+            @Override
+            public void run() {
+                if (timeOnline != null) {
+                    findAndCompare();
+                }
+                hand.postDelayed(this, 5000);
+            }
+        };
+        hand.postDelayed(run, 5000);
+        wasInHand = true;
+    }
+
+    public void findAndCompare() {
+        String timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3, timeOnline.length() - 3);
+        String one = timeValue.substring(timeValue.indexOf(":") + 1);
+        String hours = timeValue.substring(0, timeValue.indexOf(":"));
+        String minutes = one.substring(0, one.indexOf(":"));
+        String seconds = one.substring(one.indexOf(":") + 1);
+        int secOne = Integer.valueOf(hours) * 3600 + Integer.valueOf(minutes) * 60 + Integer.valueOf(seconds);
+
+        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT);
+        String currentTime = timeFormat.format(new Date());
+        String two = currentTime.substring(currentTime.indexOf(":") + 1, currentTime.indexOf(" "));
+        String h = currentTime.substring(0, currentTime.indexOf(":"));
+        String m = two.substring(0, two.indexOf(":"));
+        String s = two.substring(two.indexOf(":") + 1);
+        int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
+
+        if (Math.abs(secOne - secTwo) < 15) {
+            onlineStatus.setText("ВЫ В СЕТИ!");
+            redStatus.setVisibility(View.GONE);
+            greenStatus.setVisibility(View.VISIBLE);
+        } else {
+            onlineStatus.setText("ВЫ НЕ В СЕТИ!");
+            greenStatus.setVisibility(View.GONE);
+            redStatus.setVisibility(View.VISIBLE);
+        }
     }
 
 
@@ -474,13 +530,14 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         listenerDelete = new ValueEventListener() {
             @Override
             public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
-                    double latitude = (double) snapshot.child("latitude").getValue();
-                    double longitude = (double) snapshot.child("longitude").getValue();
-                    double distance = Math.sqrt((driverLat - latitude) * (driverLat - latitude) + (driverLon - longitude) * (driverLon - longitude));
-                    if (distance < 5.0E-4) {
-                        mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey()).child("used").setValue(1);
-//                        mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey()).removeValue();
+                if (dataSnapshot.exists()) {
+                    for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
+                        double latitude = (double) snapshot.child("latitude").getValue();
+                        double longitude = (double) snapshot.child("longitude").getValue();
+                        double distance = Math.sqrt((driverLat - latitude) * (driverLat - latitude) + (driverLon - longitude) * (driverLon - longitude));
+                        if (distance < 5.0E-4) {
+                            mDriverPinsDatabaseReference.child(driverName).child(snapshot.getKey()).child("used").setValue(1);
+                        }
                     }
                 }
             }
