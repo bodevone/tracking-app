@@ -1,16 +1,23 @@
 package com.example.bodevan.trackappfirebase2712;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.Html;
 import android.text.TextUtils;
+import android.view.Gravity;
 import android.view.LayoutInflater;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +32,8 @@ import com.google.firebase.database.ValueEventListener;
 import java.util.HashMap;
 import java.util.Map;
 
+import static android.content.Context.LAYOUT_INFLATER_SERVICE;
+
 
 public class FeedbackFragment extends Fragment {
 
@@ -34,14 +43,10 @@ public class FeedbackFragment extends Fragment {
 
     private FirebaseDatabase mFirebaseDatabase;
     private DatabaseReference mFeedbackReferenceDatabase;
-    private DatabaseReference mAccountsReferenceDatabase;
 
     private FirebaseAuth mAuth;
     private FirebaseUser user;
-    private String uid;
     private String email;
-
-    private String username;
 
     @Nullable
     @Override
@@ -50,8 +55,6 @@ public class FeedbackFragment extends Fragment {
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFeedbackReferenceDatabase = mFirebaseDatabase.getReference().child("feedbacks");
-        mAccountsReferenceDatabase = mFirebaseDatabase.getReference().child("accounts");
-
 
         userName = v.findViewById(R.id.name);
         feedBack = v.findViewById(R.id.feedback);
@@ -98,7 +101,6 @@ public class FeedbackFragment extends Fragment {
     private void sendFeedback(final String name, final String feedback) {
         mAuth = FirebaseAuth.getInstance();
         user = mAuth.getCurrentUser();
-        uid = user.getUid();
         email = user.getEmail();
 
         Map feedbackMap = new HashMap();
@@ -111,7 +113,40 @@ public class FeedbackFragment extends Fragment {
         userName.getText().clear();
         feedBack.getText().clear();
 
-        Toast.makeText(getActivity(), "Отзыв отправлен", Toast.LENGTH_LONG).show();
+//        Toast.makeText(getActivity(), "Отзыв отправлен", Toast.LENGTH_LONG).show();
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Activity.INPUT_METHOD_SERVICE);
+        //Find the currently focused view, so we can grab the correct window token from it.
+        View view = getActivity().getCurrentFocus();
+        //If no view currently has focus, create a new one, just so we can grab a window token from it
+        if (view == null) {
+            view = new View(getActivity());
+        }
+        imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
 
+        afterMath();
+    }
+
+    private void afterMath() {
+        // inflate the layout of the popup window
+        View popupView = getLayoutInflater().inflate(R.layout.popup_window, null);
+
+        // create the popup window
+        int width = LinearLayout.LayoutParams.WRAP_CONTENT;
+        int height = LinearLayout.LayoutParams.WRAP_CONTENT;
+        boolean focusable = true; // lets taps outside the popup also dismiss it
+        final PopupWindow popupWindow = new PopupWindow(popupView, width, height, focusable);
+
+        // show the popup window
+        // which view you pass in doesn't matter, it is only used for the window tolken
+        popupWindow.showAtLocation(getView(), Gravity.CENTER, 0, 0);
+
+        // dismiss the popup window when touched
+        popupView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                popupWindow.dismiss();
+                return true;
+            }
+        });
     }
 }

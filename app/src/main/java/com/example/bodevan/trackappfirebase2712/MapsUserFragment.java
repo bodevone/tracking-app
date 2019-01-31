@@ -99,9 +99,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     public double myLat;
     public double myLon;
 
-    private double prevLat;
-    private double prevLon;
-    private LatLng prevLoc;
     private String timeOnline;
 
     final private int height = 180;
@@ -115,8 +112,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private TextView onlineTime;
     private ImageView zoom;
     private TextView durationView;
-    private ImageView redStatus;
-    private ImageView greenStatus;
 
     private BitmapDrawable bitmapdraw;
     private Bitmap b;
@@ -164,8 +159,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
         durationView = v.findViewById(R.id.duration);
-        redStatus = v.findViewById(R.id.redStatus);
-        greenStatus = v.findViewById(R.id.greenStatus);
 
         bitmapdraw = (BitmapDrawable) getResources().getDrawable(R.drawable.carrr);
         b = bitmapdraw.getBitmap();
@@ -183,9 +176,12 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
-//        mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
-//        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
-        hand.removeCallbacks(run);
+        if (listenerPins != null)
+            mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
+        if (listenerPins != null)
+            mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
+        if (hand != null)
+            hand.removeCallbacks(run);
     }
 
     @Override
@@ -193,40 +189,17 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         super.onResume();
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        hand.postDelayed(run, 5000);
+        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+
+        if (hand != null)
+            hand.postDelayed(run, 5000);
+        if (listenerLocations != null)
+            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
+        if (listenerPins != null)
+            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
     }
-
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        if (mFusedLocationClient != null) {
-            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        }
-        mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
-        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
-        hand.removeCallbacks(run);
-
-    }
-
-//    @Override
-//    public void onDestroy() {
-//        super.onDestroy();
-//        if (mFusedLocationClient != null) {
-//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-//        }
-//        mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
-//        mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
-//    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -569,10 +542,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             }
         }
         firstTime = true;
-
-        prevLat = driverLat;
-        prevLon = driverLon;
-        prevLoc = new LatLng(prevLat, prevLon);
     }
 
     private void sendNotification() {
