@@ -176,7 +176,22 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (mFusedLocationClient != null) {
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
         }
+        if (listenerLocations != null)
+            mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
         if (listenerPins != null)
+            mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
+        if (hand != null)
+            hand.removeCallbacks(run);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        //stop location updates when Activity is no longer active
+        if (mFusedLocationClient != null) {
+            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+        }
+        if (listenerLocations != null)
             mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
         if (listenerPins != null)
             mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
@@ -347,7 +362,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                 if (dataSnapshot.exists()) {
                     DriverLocation info = dataSnapshot.getValue(DriverLocation.class);
                     drawMarker(info.latitude, info.longitude);
-//                    lastOnline(info.timestamp);
                     timeOnline = info.timestamp;
                 } else {
                     onlineTime.setText("Водитель еще не заходил");
