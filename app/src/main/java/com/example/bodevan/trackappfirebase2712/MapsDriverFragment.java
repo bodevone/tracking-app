@@ -98,11 +98,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     private Handler hand;
     private Runnable run;
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -120,7 +115,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         }
         mapFrag.getMapAsync(this);
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
-
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
         mFirebaseDatabase.goOnline();

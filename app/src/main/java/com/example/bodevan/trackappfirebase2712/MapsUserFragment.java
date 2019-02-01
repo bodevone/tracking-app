@@ -122,11 +122,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private Handler hand;
     private Runnable run;
 
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-    }
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -154,7 +149,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         driverEmail = bundle.getString("driver_for_user");
         bundle.remove("driver_for_user");
         driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
-
 
         onlineTime = v.findViewById(R.id.lastonline);
         zoom = v.findViewById(R.id.zoom);
@@ -199,15 +193,47 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             hand.removeCallbacks(run);
     }
 
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            return;
+//        }
+//        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+//
+//        if (hand != null)
+//            hand.postDelayed(run, 5000);
+//        if (listenerLocations != null)
+//            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
+//        if (listenerPins != null)
+//            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
+//    }
+//
+//    @Override
+//    public void onStop() {
+//        super.onStop();
+//        //stop location updates when Activity is no longer active
+//        if (mFusedLocationClient != null) {
+//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
+//        }
+//        if (listenerLocations != null)
+//            mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
+//        if (listenerPins != null)
+//            mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
+//        if (hand != null)
+//            hand.removeCallbacks(run);
+//
+//    }
+
     @Override
-    public void onResume() {
-        super.onResume();
+    public void onStart() {
+        super.onStart();
         if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                 && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             return;
         }
         this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-
         if (hand != null)
             hand.postDelayed(run, 5000);
         if (listenerLocations != null)
