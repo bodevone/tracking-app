@@ -67,7 +67,6 @@ public class LoginActivity extends AppCompatActivity {
         background = findViewById(R.id.relLayout);
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mFirebaseDatabase.goOnline();
         mDriversDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("drivers");
         mUsersDatabaseReference = mFirebaseDatabase.getReference().child("auth").child("users");
 
