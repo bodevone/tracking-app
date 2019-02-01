@@ -193,22 +193,22 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             hand.removeCallbacks(run);
     }
 
-//    @Override
-//    public void onResume() {
-//        super.onResume();
-//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            return;
-//        }
-//        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-//
-//        if (hand != null)
-//            hand.postDelayed(run, 5000);
-//        if (listenerLocations != null)
-//            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
-//        if (listenerPins != null)
-//            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
-//    }
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+
+        if (hand != null)
+            hand.postDelayed(run, 5000);
+        if (listenerLocations != null)
+            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
+        if (listenerPins != null)
+            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
+    }
 //
 //    @Override
 //    public void onStop() {
@@ -226,21 +226,21 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 //
 //    }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-        if (hand != null)
-            hand.postDelayed(run, 5000);
-        if (listenerLocations != null)
-            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
-        if (listenerPins != null)
-            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
-    }
+//    @Override
+//    public void onStart() {
+//        super.onStart();
+//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//            return;
+//        }
+//        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+//        if (hand != null)
+//            hand.postDelayed(run, 5000);
+//        if (listenerLocations != null)
+//            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
+//        if (listenerPins != null)
+//            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
+//    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {

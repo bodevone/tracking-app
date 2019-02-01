@@ -115,7 +115,6 @@ public class LoginActivity extends AppCompatActivity {
     }
 
     private void findRoleFromDatabase(final String email) {
-        mFirebaseDatabase.goOnline();
         //Checking if your email in a list of drivers
         mDriversDatabaseReference.addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
