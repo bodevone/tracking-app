@@ -1,7 +1,9 @@
 package com.example.bodevan.trackappfirebase2712;
 
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentManager;
@@ -11,6 +13,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ImageView;
@@ -31,7 +34,7 @@ public class UserActivity extends AppCompatActivity implements NavigationView.On
     NavigationView navigationView;
     private String driverForUserEmail;
     private FirebaseAuth mAuth;
-    private FirebaseUser user;
+    private boolean driverArrived;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,11 +42,11 @@ public class UserActivity extends AppCompatActivity implements NavigationView.On
         setContentView(R.layout.activity_user);
 
         mAuth = FirebaseAuth.getInstance();
-        user = mAuth.getCurrentUser();
 
         Bundle extras = getIntent().getExtras();
         if (extras != null) {
             driverForUserEmail = extras.getString("email");
+            driverArrived = extras.getBoolean("driver_arrived");
         }
 
         Toolbar toolbar = findViewById(R.id.toolbar);
@@ -120,6 +123,8 @@ public class UserActivity extends AppCompatActivity implements NavigationView.On
     public void enterUserMap() {
         Bundle bundle = new Bundle();
         bundle.putString("driver_for_user", driverForUserEmail);
+        bundle.putBoolean("driver_arrived", driverArrived);
+        bundle.putBoolean("from_activity", true);
         MapsUserFragment fragUser = new MapsUserFragment();
         fragUser.setArguments(bundle);
         getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container,

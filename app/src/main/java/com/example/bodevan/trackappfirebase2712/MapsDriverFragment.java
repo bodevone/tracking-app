@@ -117,10 +117,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mFirebaseDatabase.goOnline();
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
-
 
         onlineStatus = v.findViewById(R.id.onlineStatus);
         redStatus = v.findViewById(R.id.redStatus);
@@ -139,9 +137,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     public void onResume() {
         super.onResume();
 //        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
 //            return;
-//        }
 //        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
         if (hand != null)
             hand.postDelayed(run, 5000);
@@ -151,20 +148,17 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     public void onPause() {
         super.onPause();
         //stop location updates when Activity is no longer active
-//        if (mFusedLocationClient != null) {
+//        if (mFusedLocationClient != null)
 //            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-//        }
         if (hand != null)
             hand.removeCallbacks(run);
     }
 
-
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        if (mFusedLocationClient != null) {
+        if (mFusedLocationClient != null)
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        }
         if (listenerPins != null)
             mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
         if (listenTime != null)
@@ -177,7 +171,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-
         mMap = googleMap;
         mMap.getUiSettings().setZoomControlsEnabled(true);
 
@@ -232,8 +225,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                 Location location = locationList.get(locationList.size() - 1);
 
                 if (location != null) {
-
-
                     //Place current location marker
                     LatLng latLng = new LatLng(location.getLatitude(), location.getLongitude());
 
@@ -255,7 +246,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     };
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -281,8 +271,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                         })
                         .create()
                         .show();
-
-
             } else {
                 // No explanation needed, we can request the permission.
                 ActivityCompat.requestPermissions(getActivity(),
@@ -300,26 +288,20 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                 // If request is cancelled, the result arrays are empty.
                 if (grantResults.length > 0
                         && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-
                     // permission was granted, yay! Do the
                     // location-related task you need to do.
-                    if (ContextCompat.checkSelfPermission(getActivity(),
-                            Manifest.permission.ACCESS_FINE_LOCATION)
+                    if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
                             == PackageManager.PERMISSION_GRANTED) {
-
                         mFusedLocationClient.requestLocationUpdates(mLocationRequest, mLocationCallback, Looper.myLooper());
                         mMap.setMyLocationEnabled(true);
                     }
-
                 } else {
-
                     // permission denied, boo! Disable the
                     // functionality that depends on this permission.
                     Toast.makeText(getActivity(), "permission denied", Toast.LENGTH_LONG).show();
                 }
                 return;
             }
-
             // other 'case' lines to check for other
             // permissions this app might request
         }
@@ -339,7 +321,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
 
         mDriverLocationsDatabeReference.child(driverName).setValue(driverInfo);
     }
-
 
     public void drawPins() {
         listenerPins = new ValueEventListener() {
@@ -399,9 +380,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-
-            }
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
         };
         mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenTime);
     }
@@ -447,7 +426,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
         }
     }
 
-
     private void drawPath(List<Marker> markersToDraw) {
         LatLng posit1;
         LatLng posit2;
@@ -490,7 +468,6 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
                 });
     }
 
-
     public void removePins() {
         listenerDelete = new ValueEventListener() {
             @Override
@@ -508,8 +485,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {
-            }
+            public void onCancelled(@NonNull DatabaseError databaseError) {}
         };
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerDelete);
     }

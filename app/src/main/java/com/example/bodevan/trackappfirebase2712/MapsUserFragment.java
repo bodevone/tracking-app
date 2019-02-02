@@ -5,8 +5,10 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
@@ -17,6 +19,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.app.ActivityCompat;
@@ -93,6 +96,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private boolean zoomed = false;
     private boolean firstTime = false;
     private boolean oneTime = false;
+    private boolean driverArrived = false;
+    private boolean fromActivity = false;
 
     CameraPosition driver;
 
@@ -122,6 +127,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     private Handler hand;
     private Runnable run;
 
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -141,13 +147,23 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(getActivity());
 
         mFirebaseDatabase = FirebaseDatabase.getInstance();
-        mFirebaseDatabase.goOnline();
         mDriverLocationsDatabeReference = mFirebaseDatabase.getReference().child("driver-locations");
         mDriverPinsDatabaseReference = mFirebaseDatabase.getReference().child("driver-pins");
 
         Bundle bundle = this.getArguments();
         driverEmail = bundle.getString("driver_for_user");
+        driverArrived = bundle.getBoolean("driver_arrived");
+        fromActivity = bundle.getBoolean("from_activity");
         bundle.remove("driver_for_user");
+        bundle.remove("driver_arrived");
+        bundle.remove("from_activity");
+
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        String def = "default";
+        String temp = pref.getString("driver_for_user", def);
+        if (temp != null && temp != def && !fromActivity)
+            driverEmail = temp;
+
         driverName = driverEmail.substring(0, driverEmail.indexOf("@"));
 
         onlineTime = v.findViewById(R.id.lastonline);
@@ -164,12 +180,27 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     }
 
     @Override
+    public void onResume() {
+        super.onResume();
+        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
+            return;
+        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
+
+        if (hand != null)
+            hand.postDelayed(run, 5000);
+        if (listenerLocations != null)
+            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
+        if (listenerPins != null)
+            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
+    }
+
+    @Override
     public void onPause() {
         super.onPause();
         //stop location updates when Activity is no longer active
-        if (mFusedLocationClient != null) {
+        if (mFusedLocationClient != null)
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        }
         if (listenerLocations != null)
             mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
         if (listenerPins != null)
@@ -182,65 +213,19 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     public void onDestroyView() {
         super.onDestroyView();
         //stop location updates when Activity is no longer active
-        if (mFusedLocationClient != null) {
+        if (mFusedLocationClient != null)
             mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-        }
         if (listenerLocations != null)
             mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
         if (listenerPins != null)
             mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
         if (hand != null)
             hand.removeCallbacks(run);
+        SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(getContext());
+        SharedPreferences.Editor editor = pref.edit();
+        editor.putString("driver_for_user", driverEmail); // value to store
+        editor.commit();
     }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            return;
-        }
-        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-
-        if (hand != null)
-            hand.postDelayed(run, 5000);
-        if (listenerLocations != null)
-            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
-        if (listenerPins != null)
-            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
-    }
-//
-//    @Override
-//    public void onStop() {
-//        super.onStop();
-//        //stop location updates when Activity is no longer active
-//        if (mFusedLocationClient != null) {
-//            mFusedLocationClient.removeLocationUpdates(mLocationCallback);
-//        }
-//        if (listenerLocations != null)
-//            mDriverLocationsDatabeReference.child(driverName).removeEventListener(listenerLocations);
-//        if (listenerPins != null)
-//            mDriverPinsDatabaseReference.child(driverName).removeEventListener(listenerPins);
-//        if (hand != null)
-//            hand.removeCallbacks(run);
-//
-//    }
-
-//    @Override
-//    public void onStart() {
-//        super.onStart();
-//        if (ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
-//                && ActivityCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-//            return;
-//        }
-//        this.mFusedLocationClient.requestLocationUpdates(this.mLocationRequest, this.mLocationCallback, Looper.myLooper());
-//        if (hand != null)
-//            hand.postDelayed(run, 5000);
-//        if (listenerLocations != null)
-//            mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenerLocations);
-//        if (listenerPins != null)
-//            mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerPins);
-//    }
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
@@ -313,7 +298,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     };
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
-
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -415,7 +399,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             }
         };
         hand.postDelayed(run, 5000);
-
     }
 
     public void findAndCompare() {
@@ -458,7 +441,8 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
                     for (DataSnapshot snapshot : dataSnapshot.getChildren()) {
                         double latitude = (double) snapshot.child("latitude").getValue();
                         double longitude = (double) snapshot.child("longitude").getValue();
-                        Marker marker = mMap.addMarker(new MarkerOptions().position(new LatLng(latitude, longitude))
+                        Marker marker = mMap.addMarker(new MarkerOptions()
+                                .position(new LatLng(latitude, longitude))
                                 .title(String.valueOf(num))
                                 .icon(BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_ORANGE)));
                         if (num == 1) {
@@ -499,7 +483,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
         if (markersToDraw.size() == 0)
             durationView.setText("Маршрута Нет");
-
     }
 
     private void drawPathBetweenTwoPoints(LatLng pointOne, LatLng pointTwo, final Marker two) {
@@ -575,7 +558,7 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         if (firstTime) {
             double distance = Math.sqrt((driverLat - myLat) * (driverLat - myLat) + (driverLon - myLon) * (driverLon - myLon));
             if (distance < 5.0E-4) {
-                if (!oneTime) {
+                if (!oneTime && !driverArrived) {
                     sendNotification();
                     oneTime = true;
                 }
@@ -589,7 +572,6 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
         String channel_description = "CHANNEL_DESCRIPTION";
         String CHANNEL_ID = "CHANNEL_ID";
 
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             CharSequence name = channel_name;
             String description = channel_description;
@@ -602,16 +584,18 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
             notificationManager.createNotificationChannel(channel);
         }
 
-//        Intent intent = new Intent(getContext(), UserActivity.class);
-//        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-//        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, intent, 0);
+        Intent intent = new Intent(getContext(), UserActivity.class);
+        intent.putExtra("email", driverEmail);
+        intent.putExtra("driver_arrived", true);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        PendingIntent pendingIntent = PendingIntent.getActivity(getContext(), 0, intent, 0);
 
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(getActivity(), CHANNEL_ID)
                 .setSmallIcon(R.drawable.icon)
                 .setContentTitle("Водитель Прибыл")
                 .setContentText("Ваш Водитель Вас Ожидает")
                 .setWhen(System.currentTimeMillis())
-//                .setContentIntent(pendingIntent)
+                .setContentIntent(pendingIntent)
                 .setAutoCancel(true)
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setDefaults(Notification.DEFAULT_ALL);
@@ -619,6 +603,5 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
 
 // notificationId is a unique int for each notification that you must define
         notificationManager.notify(1, mBuilder.build());
-
     }
 }
