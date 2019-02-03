@@ -74,6 +74,7 @@ import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 
 import static android.content.ContentValues.TAG;
 
@@ -402,28 +403,45 @@ public class MapsUserFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void findAndCompare() {
-        String timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3, timeOnline.length() - 3);
+        char find = timeOnline.charAt(timeOnline.length() - 1);
+        String timeValue;
+        if (find == 'П' || find == 'M')
+            timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3, timeOnline.length() - 3);
+        else
+            timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3);
         String one = timeValue.substring(timeValue.indexOf(":") + 1);
         String hours = timeValue.substring(0, timeValue.indexOf(":"));
         String minutes = one.substring(0, one.indexOf(":"));
         String seconds = one.substring(one.indexOf(":") + 1);
         int secOne = Integer.valueOf(hours) * 3600 + Integer.valueOf(minutes) * 60 + Integer.valueOf(seconds);
 
-        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT);
-        String currentTime = timeFormat.format(new Date());
-        String two = currentTime.substring(currentTime.indexOf(":") + 1, currentTime.indexOf(" "));
-        final String h = currentTime.substring(0, currentTime.indexOf(":"));
+        Locale loc = new Locale("ru", "RU");
+        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT, loc);
+        String tempTime = timeFormat.format(new Date());
+        char find2 = tempTime.charAt(tempTime.length() - 1);
+        String currentTime;
+        if (find2 == 'П' || find2 == 'M')
+            currentTime = tempTime.substring(0, tempTime.indexOf(" "));
+        else
+            currentTime = tempTime;
+        String two = currentTime.substring(currentTime.indexOf(":") + 1);
+        String h = currentTime.substring(0, currentTime.indexOf(":"));
         String m = two.substring(0, two.indexOf(":"));
         String s = two.substring(two.indexOf(":") + 1);
         int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
 
-        if (Math.abs(secOne - secTwo) < 15) {
+        int hourDiff = Math.abs(Integer.valueOf(hours) - Integer.valueOf(h));
+        int diff = Math.abs(secOne - secTwo);
+        if (hourDiff == 12)
+            diff = Math.abs(diff - 3600 * 12);
+
+
+        if (diff <  15) {
             onlineTime.setText(Html.fromHtml("<font color =#007f00>ВОДИТЕЛЬ В ПУТИ</font>"));
         } else {
             onlineTime.setText(Html.fromHtml("<font color=red>ВОДИТЕЛЬ НЕ В СЕТИ</font><br>Был в сети " + timeOnline));
         }
     }
-
 
     public void drawPins() {
         listenerPins = new ValueEventListener() {

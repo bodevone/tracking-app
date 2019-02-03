@@ -246,6 +246,7 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     };
 
     public static final int MY_PERMISSIONS_REQUEST_LOCATION = 99;
+
     private void checkLocationPermission() {
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.ACCESS_FINE_LOCATION)
                 != PackageManager.PERMISSION_GRANTED) {
@@ -380,7 +381,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
         };
         mDriverLocationsDatabeReference.child(driverName).addValueEventListener(listenTime);
     }
@@ -400,22 +402,37 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
     }
 
     public void findAndCompare() {
-        String timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3, timeOnline.length() - 3);
+        char find = timeOnline.charAt(timeOnline.length() - 1);
+        String timeValue;
+        if (find == 'П' || find == 'M')
+            timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3, timeOnline.length() - 3);
+        else
+            timeValue = timeOnline.substring(timeOnline.indexOf("г.") + 3);
         String one = timeValue.substring(timeValue.indexOf(":") + 1);
         String hours = timeValue.substring(0, timeValue.indexOf(":"));
         String minutes = one.substring(0, one.indexOf(":"));
         String seconds = one.substring(one.indexOf(":") + 1);
         int secOne = Integer.valueOf(hours) * 3600 + Integer.valueOf(minutes) * 60 + Integer.valueOf(seconds);
 
-        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT);
-        String currentTime = timeFormat.format(new Date());
-        String two = currentTime.substring(currentTime.indexOf(":") + 1, currentTime.indexOf(" "));
+        Locale loc = new Locale("ru", "RU");
+        DateFormat timeFormat = DateFormat.getTimeInstance(DateFormat.DEFAULT, loc);
+        String tempTime = timeFormat.format(new Date());
+        char find2 = tempTime.charAt(tempTime.length() - 1);
+        String currentTime;
+        if (find2 == 'П' || find2 == 'M')
+            currentTime = tempTime.substring(0, tempTime.indexOf(" "));
+        else
+            currentTime = tempTime;
+        String two = currentTime.substring(currentTime.indexOf(":") + 1);
         String h = currentTime.substring(0, currentTime.indexOf(":"));
         String m = two.substring(0, two.indexOf(":"));
         String s = two.substring(two.indexOf(":") + 1);
         int secTwo = Integer.valueOf(h) * 3600 + Integer.valueOf(m) * 60 + Integer.valueOf(s);
-
-        if (Math.abs(secOne - secTwo) < 15) {
+        int hourDiff = Math.abs(Integer.valueOf(hours) - Integer.valueOf(h));
+        int diff = Math.abs(secOne - secTwo);
+        if (hourDiff == 12)
+            diff = Math.abs(diff - 3600 * 12);
+        if (diff < 15) {
             onlineStatus.setText("ВЫ В СЕТИ!");
             redStatus.setVisibility(View.GONE);
             greenStatus.setVisibility(View.VISIBLE);
@@ -485,7 +502,8 @@ public class MapsDriverFragment extends Fragment implements OnMapReadyCallback {
             }
 
             @Override
-            public void onCancelled(@NonNull DatabaseError databaseError) {}
+            public void onCancelled(@NonNull DatabaseError databaseError) {
+            }
         };
         mDriverPinsDatabaseReference.child(driverName).addValueEventListener(listenerDelete);
     }
